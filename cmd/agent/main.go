@@ -1,0 +1,81 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/google/gousb"
+
+	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
+)
+
+// Match function returns true for any
+// device that should be opened by gousb.
+func matchDevice(desc *gousb.DeviceDesc) bool {
+	if desc.Class == gousb.ClassHub {
+		// Skip hub devices, as usbip does:
+		// https://github.com/torvalds/linux/blob/v6.18/tools/usb/usbip/src/usbip_list.c#L193
+		return false
+	}
+
+	return true
+}
+
+type Server struct {
+	deviceContext *gousb.Context
+}
+
+func (s *Server) listDevices(w http.ResponseWriter, req *http.Request) {
+	devices, err := s.deviceContext.OpenDevices(matchDevice)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to open devices: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	defer func() {
+		for _, d := range devices {
+			d.Close()
+		}
+	}()
+
+	var devicesMetadata []devicemetadata.Metadata
+
+	for _, device := range devices {
+		desc := device.Desc
+		d := devicemetadata.Metadata{
+			Bus:     desc.Bus,
+			Address: desc.Address,
+			Vendor:  desc.Vendor,
+			Product: desc.Product,
+			Class:   desc.Class,
+		}
+
+		serial, err := device.SerialNumber()
+		if err == nil {
+			// No error means serial number present.
+			d.Serial = serial
+		}
+
+		devicesMetadata = append(devicesMetadata, d)
+	}
+
+	b, err := json.Marshal(devicesMetadata)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to encode devices as json: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(b)
+}
+
+func main() {
+	server := &Server{
+		deviceContext: gousb.NewContext(),
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /devices", server.listDevices)
+
+	http.ListenAndServe(":8105", mux)
+}
