@@ -50,10 +50,10 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 	for _, meta := range devicesMetadata {
 		attrs := map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
 			"vendor": {
-				IntValue: ptr.To(int64(meta.Vendor)),
+				StringValue: ptr.To(fmt.Sprintf("%04x", int64(meta.Vendor))),
 			},
 			"product": {
-				IntValue: ptr.To(int64(meta.Product)),
+				StringValue: ptr.To(fmt.Sprintf("%04x", int64(meta.Product))),
 			},
 		}
 		if meta.Serial != "" {
