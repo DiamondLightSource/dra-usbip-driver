@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
 
 	"github.com/google/gousb"
 
@@ -43,12 +44,25 @@ func (s *Server) listDevices(w http.ResponseWriter, req *http.Request) {
 
 	for _, device := range devices {
 		desc := device.Desc
+
+		busPath := fmt.Sprintf("/dev/bus/usb/%03d/%03d", desc.Bus, desc.Address)
+		udevInfoJson, err := exec.Command("udevadm", "info", "--json=short", busPath).Output()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("could not get udev info for device %s: %s", busPath, err), http.StatusInternalServerError)
+			return
+		}
+		udevInfo := &devicemetadata.UdevadmInfo{}
+		json.Unmarshal(udevInfoJson, &udevInfo)
+		fmt.Println(udevInfo)
+
 		d := devicemetadata.Metadata{
 			Bus:     desc.Bus,
 			Address: desc.Address,
 			Vendor:  desc.Vendor,
 			Product: desc.Product,
 			Class:   desc.Class,
+			BusID:   udevInfo.SysName,
+			Model:   udevInfo.Model,
 		}
 
 		serial, err := device.SerialNumber()
