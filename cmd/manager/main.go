@@ -33,7 +33,7 @@ func init() {
 }
 
 func getDevices(agent string) ([]resourceapi.Device, error) {
-	resp, err := http.Get("http://" + agent + "/devices")
+	resp, err := http.Get("http://" + agent + ":8105/devices")
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch devices from %s: %w", agent, err)
 	}
@@ -74,7 +74,7 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 		}
 
 		d := resourceapi.Device{
-			Name:       fmt.Sprintf("bus-%03d-%03d", meta.Bus, meta.Address),
+			Name:       meta.BusID,
 			Attributes: attrs,
 		}
 
@@ -108,29 +108,11 @@ func main() {
 		panic(err)
 	}
 
-	devices, err := getDevices(agents[0])
-	if err != nil {
-		panic(err)
-	}
-
-	resources := &resourceslice.DriverResources{
-		Pools: map[string]resourceslice.Pool{
-			"usbip": {
-				Slices: []resourceslice.Slice{
-					{
-						Devices: devices,
-					},
-				},
-			},
-		},
-	}
-
 	resourceSliceController, err := resourceslice.StartController(
 		ctx,
 		resourceslice.Options{
 			DriverName: "usbip",
 			KubeClient: coreclient,
-			Resources:  resources,
 			ErrorHandler: func(ctx context.Context, err error, msg string) {
 				fmt.Println(err, msg)
 			},
@@ -148,25 +130,24 @@ loop:
 		case <-ctx.Done():
 			break loop
 		case <-time.After(2 * time.Second):
+			resources := &resourceslice.DriverResources{
+				Pools: map[string]resourceslice.Pool{},
+			}
 			for _, agent := range agents {
 				devices, err := getDevices(agent)
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
-				resources := &resourceslice.DriverResources{
-					Pools: map[string]resourceslice.Pool{
-						"usbip": {
-							Slices: []resourceslice.Slice{
-								{
-									Devices: devices,
-								},
-							},
+				resources.Pools[agent] = resourceslice.Pool{
+					Slices: []resourceslice.Slice{
+						{
+							Devices: devices,
 						},
 					},
 				}
-				resourceSliceController.Update(resources)
 			}
+			resourceSliceController.Update(resources)
 		}
 	}
 }
