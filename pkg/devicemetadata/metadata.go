@@ -32,4 +32,7 @@ type UdevadmInfo struct {
 	// Device model. From looking at a few, seems to
 	// be more descriptive than the libusb product string.
 	Model string `json:"ID_MODEL"`
+
+	// Path of the device under /sys.
+	DevPath string `json:"DEVPATH"`
 }

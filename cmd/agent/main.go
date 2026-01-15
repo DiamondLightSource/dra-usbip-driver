@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strings"
 
 	"github.com/google/gousb"
 
@@ -53,7 +54,14 @@ func (s *Server) listDevices(w http.ResponseWriter, req *http.Request) {
 		}
 		udevInfo := &devicemetadata.UdevadmInfo{}
 		json.Unmarshal(udevInfoJson, &udevInfo)
-		fmt.Println(udevInfo)
+
+		if strings.Contains(udevInfo.DevPath, "vhci_hcd") {
+			// Device is already a virtual device attached
+			// by usbip, don't re-export it.
+			continue
+		}
+
+		fmt.Printf("%#v\n", udevInfo)
 
 		d := devicemetadata.Metadata{
 			Bus:     desc.Bus,
