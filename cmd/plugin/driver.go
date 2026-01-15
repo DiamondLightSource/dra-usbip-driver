@@ -16,11 +16,18 @@ import (
 type driver struct {
 	client coreclientset.Interface
 	helper *kubeletplugin.Helper
+	state  *DeviceState
 }
 
 func NewDriver(ctx context.Context, kubeClient coreclientset.Interface) (*driver, error) {
+	state, err := NewDeviceState()
+	if err != nil {
+		return nil, fmt.Errorf("error initialising state: %w", err)
+	}
+
 	driver := &driver{
 		client: kubeClient,
+		state:  state,
 	}
 
 	nodeName := os.Getenv("NODE_NAME")
@@ -54,13 +61,33 @@ func (d *driver) PrepareResourceClaims(ctx context.Context, claims []*resourceap
 	result := make(map[types.UID]kubeletplugin.PrepareResult)
 
 	for _, claim := range claims {
-		klog.Infof("Claim allocation: %#v", claim.Status.Allocation)
-		result[claim.UID] = kubeletplugin.PrepareResult{
-			Devices: []kubeletplugin.Device{},
-		}
+		result[claim.UID] = d.prepareResourceClaim(ctx, claim)
 	}
 
 	return result, nil
+}
+
+func (d *driver) prepareResourceClaim(_ context.Context, claim *resourceapi.ResourceClaim) kubeletplugin.PrepareResult {
+	preparedDevices, err := d.state.Prepare(claim)
+	if err != nil {
+		return kubeletplugin.PrepareResult{
+			Err: fmt.Errorf("error preparing claim %v: %w", claim.UID, err),
+		}
+	}
+
+	var prepared []kubeletplugin.Device
+	for _, preparedDev := range preparedDevices {
+		prepared = append(prepared, kubeletplugin.Device{
+			Requests:     preparedDev.GetRequestNames(),
+			PoolName:     preparedDev.GetPoolName(),
+			DeviceName:   preparedDev.GetDeviceName(),
+			CDIDeviceIDs: preparedDev.GetCDIDeviceIDs(),
+		})
+	}
+
+	klog.Infof("Returning newly prepared devices for claim '%v': %v", claim.UID, prepared)
+
+	return kubeletplugin.PrepareResult{Devices: prepared}
 }
 
 func (d *driver) UnprepareResourceClaims(ctx context.Context, claims []kubeletplugin.NamespacedObject) (map[types.UID]error, error) {
@@ -68,7 +95,8 @@ func (d *driver) UnprepareResourceClaims(ctx context.Context, claims []kubeletpl
 	result := make(map[types.UID]error)
 
 	for _, claim := range claims {
-		result[claim.UID] = nil
+		klog.Infof("Unprepare claim %s", claim.UID)
+		result[claim.UID] = d.state.Unprepare(string(claim.UID))
 	}
 
 	return result, nil

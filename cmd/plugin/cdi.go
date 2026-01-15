@@ -64,16 +64,53 @@ func (cdi *CDIHandler) CreateCommonSpecFile() error {
 	return cdi.cache.WriteSpec(spec, specName)
 }
 
+func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevices) error {
+	specName := cdiapi.GenerateTransientSpecName(cdi.vendor(), cdi.class, claimUID)
+
+	spec := &cdispec.Spec{
+		Kind:    cdi.kind(),
+		Devices: []cdispec.Device{},
+	}
+
+	for _, device := range devices {
+		containerEdits := cdispec.ContainerEdits{
+			Env: []string{
+				fmt.Sprintf("USBIP_DEVICE=%s/%s", device.RemoteHost, device.RemoteBusID),
+			},
+		}
+
+		cdiDevice := cdispec.Device{
+			Name:           fmt.Sprintf("%s-%s", claimUID, device.DeviceName),
+			ContainerEdits: containerEdits,
+		}
+
+		spec.Devices = append(spec.Devices, cdiDevice)
+	}
+
+	minVersion, err := cdiapi.MinimumRequiredVersion(spec)
+	if err != nil {
+		return fmt.Errorf("failed to get minimum required CDI spec version: %v", err)
+	}
+	spec.Version = minVersion
+
+	return cdi.cache.WriteSpec(spec, specName)
+}
+
+func (cdi *CDIHandler) DeleteClaimSpecFile(claimUID string) error {
+	specName := cdiapi.GenerateTransientSpecName(cdi.vendor(), cdi.class, claimUID)
+	return cdi.cache.RemoveSpec(specName)
+}
+
 func (cdi *CDIHandler) GetClaimDevices(claimUID string, devices []string) []string {
 	// Insert the common CDI device for all claims.
 	cdiDevices := []string{
 		cdiparser.QualifiedName(cdi.vendor(), cdi.class, cdiCommonDeviceName),
 	}
 
-	// for _, device := range devices {
-	// 	cdiDevice := cdiparser.QualifiedName(cdi.vendor(), cdi.class, fmt.Sprintf("%s-%s", claimUID, device))
-	// 	cdiDevices = append(cdiDevices, cdiDevice)
-	// }
+	for _, device := range devices {
+		cdiDevice := cdiparser.QualifiedName(cdi.vendor(), cdi.class, fmt.Sprintf("%s-%s", claimUID, device))
+		cdiDevices = append(cdiDevices, cdiDevice)
+	}
 
 	return cdiDevices
 }

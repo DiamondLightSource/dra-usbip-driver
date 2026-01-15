@@ -110,6 +110,10 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drav1.Device
 		return nil, fmt.Errorf("prepared failed: %v", err)
 	}
 
+	if err = s.cdi.CreateClaimSpecFile(claimUID, preparedDevices); err != nil {
+		return nil, fmt.Errorf("unable to create CDI spec file for claim: %v", err)
+	}
+
 	// Sync the prepared claims back to the checkpoint file on disk.
 	preparedClaims[claimUID] = preparedDevices
 	if err := s.checkpointManager.CreateCheckpoint(DriverPluginCheckpointFile, checkpoint); err != nil {
@@ -161,7 +165,10 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 		return nil
 	}
 
-	// Detach device here.
+	err := s.cdi.DeleteClaimSpecFile(claimUID)
+	if err != nil {
+		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
+	}
 
 	// Remove the claim from the checkpoint file on disk.
 	delete(preparedClaims, claimUID)
