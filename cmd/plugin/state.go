@@ -5,9 +5,12 @@ import (
 	"sync"
 
 	resourceapi "k8s.io/api/resource/v1"
+	"k8s.io/klog/v2"
 	drav1 "k8s.io/kubelet/pkg/apis/dra/v1"
 	"k8s.io/kubernetes/pkg/kubelet/checkpointmanager"
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
+
+	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
 )
 
 const (
@@ -134,9 +137,20 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (Attached
 		if result.Driver != "usbip" {
 			continue
 		}
+
+		remoteHost := result.Pool
+		remoteBusID := result.Device
+
+		localBus, err := usbip.AttachDevice(remoteHost, remoteBusID)
+		if err != nil {
+			return nil, fmt.Errorf("error attaching device %s/%s: %w", remoteHost, remoteBusID, err)
+		}
+
+		klog.Infof("Attached remote device %s/%s with local bus ID %s", remoteHost, remoteBusID, localBus)
+
 		d := &AttachedDevice{
-			RemoteHost:  result.Pool,
-			RemoteBusID: result.Device,
+			RemoteHost:  remoteHost,
+			RemoteBusID: remoteBusID,
 			Device: drav1.Device{
 				RequestNames: []string{result.Request},
 				PoolName:     result.Pool,
@@ -165,6 +179,10 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 		return nil
 	}
 
+	if err := s.unprepareDevices(claimUID, preparedClaims[claimUID]); err != nil {
+		return fmt.Errorf("unprepare failed: %v", err)
+	}
+
 	err := s.cdi.DeleteClaimSpecFile(claimUID)
 	if err != nil {
 		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
@@ -174,6 +192,18 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	delete(preparedClaims, claimUID)
 	if err := s.checkpointManager.CreateCheckpoint(DriverPluginCheckpointFile, checkpoint); err != nil {
 		return fmt.Errorf("unable to sync back to checkpoint: %v", err)
+	}
+
+	return nil
+}
+
+func (s *DeviceState) unprepareDevices(claimUID string, devices AttachedDevices) error {
+	for _, device := range devices {
+		klog.Info("Detaching device", device)
+		err := usbip.DetachDevice(device.RemoteHost, device.RemoteBusID)
+		if err != nil {
+			return fmt.Errorf("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
+		}
 	}
 
 	return nil
