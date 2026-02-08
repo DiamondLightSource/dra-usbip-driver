@@ -21,7 +21,7 @@ func AttachDevice(remoteHost, remoteBusID string) (string, error) {
 
 	// Local device can't be found immediately.
 	// TODO: check in loop?
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	_, localBus, err := GetLocalFromRemote(remoteHost, remoteBusID)
 	if err != nil {
