@@ -36,8 +36,10 @@ type UdevadmInfo struct {
 	// Path of the device under /sys.
 	DevPath string `json:"DEVPATH"`
 
-	// Path of device under /dev.
+	// Path of device under /dev, and the bus/dev numbers.
 	DevName string `json:"DEVNAME"`
+	BusNum  string `json:"BUSNUM"`
+	DevNum  string `json:"DEVNUM"`
 
 	// Device node major and minor numbers.
 	Major int64 `json:"MAJOR"`

@@ -87,7 +87,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 
 		containerEdits := cdispec.ContainerEdits{
 			Env: []string{
-				fmt.Sprintf("USBIP_DEVICE=%s/%s", device.RemoteHost, device.RemoteBusID),
+				fmt.Sprintf("USBIP_DEVICE_%s_%s=%s/%s", devInfo.BusNum, devInfo.DevNum, device.RemoteHost, device.RemoteBusID),
 			},
 			DeviceNodes: []*cdispec.DeviceNode{
 				&cdispec.DeviceNode{
