@@ -2,9 +2,13 @@ package usbip
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+
+	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
 )
 
 const (
@@ -125,4 +129,18 @@ func GetLocalFromRemote(remoteHost, remoteBusID string) (int, string, error) {
 	}
 
 	return 0, "", fmt.Errorf("remote device %s/%s not found locally", remoteHost, remoteBusID)
+}
+
+func GetLocalDeviceInfo(localBusID string) (*devicemetadata.UdevadmInfo, error) {
+	sysPath := fmt.Sprintf("/sys/bus/usb/devices/%s", localBusID)
+
+	udevInfoJson, err := exec.Command("udevadm", "info", "--json=short", sysPath).Output()
+	if err != nil {
+		return nil, fmt.Errorf("could not get udev device info for %s: %w", sysPath, err)
+	}
+
+	udevInfo := &devicemetadata.UdevadmInfo{}
+	json.Unmarshal(udevInfoJson, &udevInfo)
+
+	return udevInfo, nil
 }

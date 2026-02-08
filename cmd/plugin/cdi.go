@@ -6,6 +6,8 @@ import (
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
 	cdiparser "tags.cncf.io/container-device-interface/pkg/parser"
 	cdispec "tags.cncf.io/container-device-interface/specs-go"
+
+	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
 )
 
 const cdiCommonDeviceName = "common"
@@ -73,9 +75,26 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 	}
 
 	for _, device := range devices {
+		_, localBusID, err := usbip.GetLocalFromRemote(device.RemoteHost, device.RemoteBusID)
+		if err != nil {
+			return fmt.Errorf("could not get local bus ID for %s/%s: %w", device.RemoteHost, device.RemoteBusID, err)
+		}
+
+		devInfo, err := usbip.GetLocalDeviceInfo(localBusID)
+		if err != nil {
+			return fmt.Errorf("could not get local device info for %s/%s: %w", device.RemoteHost, device.RemoteBusID, err)
+		}
+
 		containerEdits := cdispec.ContainerEdits{
 			Env: []string{
 				fmt.Sprintf("USBIP_DEVICE=%s/%s", device.RemoteHost, device.RemoteBusID),
+			},
+			DeviceNodes: []*cdispec.DeviceNode{
+				&cdispec.DeviceNode{
+					Path:  devInfo.DevName,
+					Major: devInfo.Major,
+					Minor: devInfo.Minor,
+				},
 			},
 		}
 
