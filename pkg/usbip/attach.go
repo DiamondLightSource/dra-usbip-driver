@@ -55,10 +55,9 @@ func DetachDevice(remoteHost, remoteBusID string, expectedMinor int64) error {
 		// then another device may have been attached with the
 		// same local bus ID, and that device may be mounted to
 		// another pod.
-		// If that device node minor number does not match, then
-		// it must not be the same device as was expected.
-		// TODO: maybe log a warning and return nil instead?
-		return fmt.Errorf("device has minor number %d, not expected number %d", devInfo.Minor, expectedMinor)
+		// Skip detaching the device but log a warning.
+		klog.Warningf("detach called for %s/%s, but device has minor number %d, not expected number %d", remoteHost, remoteBusID, devInfo.Minor, expectedMinor)
+		return nil
 	}
 
 	var exitError *exec.ExitError
