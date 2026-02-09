@@ -211,7 +211,7 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 func (s *DeviceState) unprepareDevices(claimUID string, devices AttachedDevices) error {
 	for _, device := range devices {
 		klog.Info("Detaching device", device)
-		err := usbip.DetachDevice(device.RemoteHost, device.RemoteBusID)
+		err := usbip.DetachDevice(device.RemoteHost, device.RemoteBusID, device.DeviceNodeMinor)
 		if err != nil {
 			klog.Infof("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
 			return fmt.Errorf("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
