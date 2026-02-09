@@ -202,6 +202,7 @@ func (s *DeviceState) unprepareDevices(claimUID string, devices AttachedDevices)
 		klog.Info("Detaching device", device)
 		err := usbip.DetachDevice(device.RemoteHost, device.RemoteBusID)
 		if err != nil {
+			klog.Infof("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
 			return fmt.Errorf("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
 		}
 	}
