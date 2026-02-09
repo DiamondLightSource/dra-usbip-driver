@@ -42,6 +42,6 @@ type UdevadmInfo struct {
 	DevNum  string `json:"DEVNUM"`
 
 	// Device node major and minor numbers.
-	Major int64 `json:"MAJOR"`
-	Minor int64 `json:"MINOR"`
+	Major int64 `json:"MAJOR,string"`
+	Minor int64 `json:"MINOR,string"`
 }
