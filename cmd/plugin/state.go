@@ -32,6 +32,11 @@ type AttachedDevice struct {
 
 	RemoteHost  string
 	RemoteBusID string
+
+	// Device minor number, to uniquely
+	// identify the locally mounted device,
+	// as the local bus ID may be re-used.
+	DeviceNodeMinor int64
 }
 
 type AttachedDevices []*AttachedDevice
@@ -146,11 +151,17 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (Attached
 			return nil, fmt.Errorf("error attaching device %s/%s: %w", remoteHost, remoteBusID, err)
 		}
 
+		devInfo, err := usbip.GetLocalDeviceInfo(localBus)
+		if err != nil {
+			return nil, fmt.Errorf("could not get local device info for %s/%s: %w", remoteHost, remoteBusID, err)
+		}
+
 		klog.Infof("Attached remote device %s/%s with local bus ID %s", remoteHost, remoteBusID, localBus)
 
 		d := &AttachedDevice{
-			RemoteHost:  remoteHost,
-			RemoteBusID: remoteBusID,
+			RemoteHost:      remoteHost,
+			RemoteBusID:     remoteBusID,
+			DeviceNodeMinor: devInfo.Minor,
 			Device: drav1.Device{
 				RequestNames: []string{result.Request},
 				PoolName:     result.Pool,
