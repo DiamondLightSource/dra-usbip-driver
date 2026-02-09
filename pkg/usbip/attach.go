@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"time"
+
+	"k8s.io/klog/v2"
 )
 
 // Attach a device by its remote host/bus,
@@ -34,8 +36,13 @@ func AttachDevice(remoteHost, remoteBusID string) (string, error) {
 func DetachDevice(remoteHost, remoteBusID string) error {
 	// Detach is done by passing the local port.
 	localPort, _, err := GetLocalFromRemote(remoteHost, remoteBusID)
-	if err != nil {
-		return fmt.Errorf("error detaching: %w", err)
+	if errors.Is(err, RemoteDeviceNotFoundError) {
+		// If expected device is not present locally, then log as a warning
+		// but return no error to allow the pod termination to continue.
+		klog.Warningf("detach called for remote device %s/%s, but device not present locally", remoteHost, remoteBusID)
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("error finding device to detach: %w", err)
 	}
 
 	var exitError *exec.ExitError

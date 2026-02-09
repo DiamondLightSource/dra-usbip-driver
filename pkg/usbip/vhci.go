@@ -128,7 +128,7 @@ func GetLocalFromRemote(remoteHost, remoteBusID string) (int, string, error) {
 		}
 	}
 
-	return 0, "", fmt.Errorf("remote device %s/%s not found locally", remoteHost, remoteBusID)
+	return 0, "", RemoteDeviceNotFoundError
 }
 
 func GetLocalDeviceInfo(localBusID string) (*devicemetadata.UdevadmInfo, error) {
