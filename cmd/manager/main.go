@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/gousb/usbid"
 	"github.com/spf13/pflag"
 
 	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
@@ -50,26 +49,27 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 	for _, meta := range devicesMetadata {
 		attrs := map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
 			"vendor": {
-				StringValue: ptr.To(fmt.Sprintf("%04x", int64(meta.Vendor))),
+				StringValue: ptr.To(fmt.Sprintf("%04x", meta.Vendor)),
 			},
 			"product": {
-				StringValue: ptr.To(fmt.Sprintf("%04x", int64(meta.Product))),
+				StringValue: ptr.To(fmt.Sprintf("%04x", meta.Product)),
 			},
 		}
+
 		if meta.Serial != "" {
 			attrs["serial"] = resourceapi.DeviceAttribute{
 				StringValue: ptr.To(meta.Serial),
 			}
 		}
 
-		if vendorInfo, ok := usbid.Vendors[meta.Vendor]; ok {
+		if meta.VendorName != "" {
 			attrs["vendorName"] = resourceapi.DeviceAttribute{
-				StringValue: ptr.To(vendorInfo.Name),
+				StringValue: ptr.To(meta.VendorName),
 			}
-			if productInfo, ok := vendorInfo.Product[meta.Product]; ok {
-				attrs["productName"] = resourceapi.DeviceAttribute{
-					StringValue: ptr.To(productInfo.Name),
-				}
+		}
+		if meta.ProductName != "" {
+			attrs["productName"] = resourceapi.DeviceAttribute{
+				StringValue: ptr.To(meta.ProductName),
 			}
 		}
 

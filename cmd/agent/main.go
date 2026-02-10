@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/gousb"
+	"github.com/google/gousb/usbid"
 
 	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
 )
@@ -63,14 +64,24 @@ func (s *Server) listDevices(w http.ResponseWriter, req *http.Request) {
 
 		fmt.Printf("%#v\n", udevInfo)
 
+		var vendorName, productName string
+		if vendorInfo, ok := usbid.Vendors[desc.Vendor]; ok {
+			vendorName = vendorInfo.Name
+			if productInfo, ok := vendorInfo.Product[desc.Product]; ok {
+				productName = productInfo.Name
+			}
+		}
+
 		d := devicemetadata.Metadata{
-			Bus:     desc.Bus,
-			Address: desc.Address,
-			Vendor:  desc.Vendor,
-			Product: desc.Product,
-			Class:   desc.Class,
-			BusID:   udevInfo.SysName,
-			Model:   udevInfo.Model,
+			Bus:         desc.Bus,
+			Address:     desc.Address,
+			Vendor:      uint16(desc.Vendor),
+			Product:     uint16(desc.Product),
+			Class:       uint8(desc.Class),
+			VendorName:  vendorName,
+			ProductName: productName,
+			BusID:       udevInfo.SysName,
+			Model:       udevInfo.Model,
 		}
 
 		serial, err := device.SerialNumber()

@@ -1,19 +1,19 @@
 package devicemetadata
 
-import (
-	"github.com/google/gousb"
-)
-
 type Metadata struct {
 	Bus     int
 	Address int
 
-	Vendor  gousb.ID
-	Product gousb.ID
+	// Same type as gousb.ID.
+	Vendor  uint16
+	Product uint16
 
-	Class gousb.Class
+	// Same type as gousb.Class.
+	Class uint8
 
-	Serial string
+	VendorName  string
+	ProductName string
+	Serial      string
 
 	// What udev info calls the SysName,
 	// usbip calls the BusID.
