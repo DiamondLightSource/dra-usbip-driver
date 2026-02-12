@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	resourceapi "k8s.io/api/resource/v1"
@@ -144,7 +145,13 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (Attached
 		}
 
 		remoteHost := result.Pool
-		remoteBusID := result.Device
+
+		// Remote bus ID is stored as the device name, but device names
+		// don't support having a dot character in which is needed for
+		// devices connected to USB hubs.
+		// The dot is converted to a "d" by the manager, change it back
+		// here to get the actual remote bus ID.
+		remoteBusID := strings.ReplaceAll(result.Device, "d", ".")
 
 		localBus, err := usbip.AttachDevice(remoteHost, remoteBusID)
 		if err != nil {

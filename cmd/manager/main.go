@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -73,8 +74,15 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 			}
 		}
 
+		// Valid device names must have only lowercase alphanumeric
+		// and dash characters. The bus IDs of devices connected to
+		// USB hubs may have dots in, e.g "3-1.5", so are not valid.
+		// Replace the dot with a lowercase "d" which can be turned
+		// back later when needed for attaching with usbip.
+		deviceName := strings.ReplaceAll(meta.BusID, ".", "d")
+
 		d := resourceapi.Device{
-			Name:       meta.BusID,
+			Name:       deviceName,
 			Attributes: attrs,
 		}
 
