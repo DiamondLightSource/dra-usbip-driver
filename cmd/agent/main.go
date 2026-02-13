@@ -7,90 +7,57 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/google/gousb"
-	"github.com/google/gousb/usbid"
-
 	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
+	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
 )
 
-// Match function returns true for any
-// device that should be opened by gousb.
-func matchDevice(desc *gousb.DeviceDesc) bool {
-	if desc.Class == gousb.ClassHub {
-		// Skip hub devices, as usbip does:
-		// https://github.com/torvalds/linux/blob/v6.18/tools/usb/usbip/src/usbip_list.c#L193
-		return false
+// Parse output of "usbip list --local"
+// into list of bus IDs of local devices.
+func parseLocalDevices(data string) ([]string, error) {
+	if data == "" {
+		return nil, nil
 	}
 
-	return true
+	var localDevices []string
+
+	// Parse lines of the form:
+	// busid=3-1.5#usbid=0403:6015#
+	// And extract the bus ID.
+	for line := range strings.Lines(data) {
+		if !strings.HasPrefix(line, "busid=") {
+			return nil, fmt.Errorf("failed parsing local device %q", line)
+		}
+
+		parts := strings.Split(line, "#")
+		busIDPart := parts[0]
+		busID := strings.TrimPrefix(busIDPart, "busid=")
+		localDevices = append(localDevices, busID)
+	}
+
+	return localDevices, nil
 }
 
-type Server struct {
-	deviceContext *gousb.Context
-}
-
-func (s *Server) listDevices(w http.ResponseWriter, req *http.Request) {
-	devices, err := s.deviceContext.OpenDevices(matchDevice)
+func listDevices(w http.ResponseWriter, req *http.Request) {
+	usbipLocalDevicesOutput, err := exec.Command("usbip", "list", "-p", "-l").Output()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to open devices: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("could not list local usbip devices: %s", err), http.StatusInternalServerError)
 		return
 	}
 
-	defer func() {
-		for _, d := range devices {
-			d.Close()
-		}
-	}()
+	localDevices, err := parseLocalDevices(string(usbipLocalDevicesOutput))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could not parse local usbip devices: %s", err), http.StatusInternalServerError)
+		return
+	}
 
-	var devicesMetadata []devicemetadata.Metadata
-
-	for _, device := range devices {
-		desc := device.Desc
-
-		busPath := fmt.Sprintf("/dev/bus/usb/%03d/%03d", desc.Bus, desc.Address)
-		udevInfoJson, err := exec.Command("udevadm", "info", "--json=short", busPath).Output()
+	var devicesMetadata []*devicemetadata.UdevadmInfo
+	for _, device := range localDevices {
+		udevInfo, err := usbip.GetLocalDeviceInfo(device)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("could not get udev info for device %s: %s", busPath, err), http.StatusInternalServerError)
-			return
-		}
-		udevInfo := &devicemetadata.UdevadmInfo{}
-		json.Unmarshal(udevInfoJson, &udevInfo)
-
-		if strings.Contains(udevInfo.DevPath, "vhci_hcd") {
-			// Device is already a virtual device attached
-			// by usbip, don't re-export it.
-			continue
+			http.Error(w, fmt.Sprintf("failed to get device info for %s: %s", device, err), http.StatusInternalServerError)
 		}
 
-		fmt.Printf("%#v\n", udevInfo)
-
-		var vendorName, productName string
-		if vendorInfo, ok := usbid.Vendors[desc.Vendor]; ok {
-			vendorName = vendorInfo.Name
-			if productInfo, ok := vendorInfo.Product[desc.Product]; ok {
-				productName = productInfo.Name
-			}
-		}
-
-		d := devicemetadata.Metadata{
-			Bus:         desc.Bus,
-			Address:     desc.Address,
-			Vendor:      uint16(desc.Vendor),
-			Product:     uint16(desc.Product),
-			Class:       uint8(desc.Class),
-			VendorName:  vendorName,
-			ProductName: productName,
-			BusID:       udevInfo.SysName,
-			Model:       udevInfo.Model,
-		}
-
-		serial, err := device.SerialNumber()
-		if err == nil {
-			// No error means serial number present.
-			d.Serial = serial
-		}
-
-		devicesMetadata = append(devicesMetadata, d)
+		devicesMetadata = append(devicesMetadata, udevInfo)
 	}
 
 	b, err := json.Marshal(devicesMetadata)
@@ -99,16 +66,13 @@ func (s *Server) listDevices(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
 }
 
 func main() {
-	server := &Server{
-		deviceContext: gousb.NewContext(),
-	}
-
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /devices", server.listDevices)
+	mux.HandleFunc("GET /devices", listDevices)
 
 	http.ListenAndServe(":8105", mux)
 }

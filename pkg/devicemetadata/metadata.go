@@ -1,37 +1,12 @@
 package devicemetadata
 
-type Metadata struct {
-	Bus     int
-	Address int
-
-	// Same type as gousb.ID.
-	Vendor  uint16
-	Product uint16
-
-	// Same type as gousb.Class.
-	Class uint8
-
-	VendorName  string
-	ProductName string
-	Serial      string
-
-	// What udev info calls the SysName,
-	// usbip calls the BusID.
-	BusID string
-	Model string
-}
-
 // Representing the required fields from the
 // output of a the udevadm info command e.g:
 // "udevadm info --json=pretty <dev>".
 type UdevadmInfo struct {
 	// E.g "1-4", with different numbers to the bus/dev num.
 	// This is how usbip represents the device.
-	SysName string `json::SYSNAME:`
-
-	// Device model. From looking at a few, seems to
-	// be more descriptive than the libusb product string.
-	Model string `json:"ID_MODEL"`
+	SysName string `json:"SYSNAME"`
 
 	// Path of the device under /sys.
 	DevPath string `json:"DEVPATH"`
@@ -44,4 +19,19 @@ type UdevadmInfo struct {
 	// Device node major and minor numbers.
 	Major int64 `json:"MAJOR,string"`
 	Minor int64 `json:"MINOR,string"`
+
+	// Device serial number representations.
+	// Short seems to be the better option.
+	Serial      string `json:"ID_USB_SERIAL"`
+	SerialShort string `json:"ID_USB_SERIAL_SHORT"`
+
+	// Vendor and product IDs e.g 0403:6015.
+	VendorID string `json:"ID_VENDOR_ID"`
+	ModelID  string `json:"ID_MODEL_ID"`
+
+	// Vendor and product names.
+	VendorName string `json:"ID_VENDOR"`
+	VendorDB   string `json:"ID_VENDOR_FROM_DATABASE"`
+	ModelName  string `json:"ID_MODEL"`
+	ModelDB    string `json:"ID_MODEL_FROM_DATABASE"`
 }
