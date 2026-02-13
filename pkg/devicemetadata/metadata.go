@@ -8,6 +8,9 @@ type UdevadmInfo struct {
 	// This is how usbip represents the device.
 	SysName string `json:"SYSNAME"`
 
+	// Device driver, should be "usb" or "usbip-host" if bound.
+	Driver string `json:"DRIVER"`
+
 	// Path of the device under /sys.
 	DevPath string `json:"DEVPATH"`
 

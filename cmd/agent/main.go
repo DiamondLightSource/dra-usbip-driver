@@ -4,49 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/exec"
-	"strings"
+
+	"github.com/spf13/pflag"
 
 	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
 	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
 )
 
-// Parse output of "usbip list --local"
-// into list of bus IDs of local devices.
-func parseLocalDevices(data string) ([]string, error) {
-	if data == "" {
-		return nil, nil
-	}
+var (
+	bindAllDevices bool
+)
 
-	var localDevices []string
-
-	// Parse lines of the form:
-	// busid=3-1.5#usbid=0403:6015#
-	// And extract the bus ID.
-	for line := range strings.Lines(data) {
-		if !strings.HasPrefix(line, "busid=") {
-			return nil, fmt.Errorf("failed parsing local device %q", line)
-		}
-
-		parts := strings.Split(line, "#")
-		busIDPart := parts[0]
-		busID := strings.TrimPrefix(busIDPart, "busid=")
-		localDevices = append(localDevices, busID)
-	}
-
-	return localDevices, nil
+func init() {
+	pflag.BoolVar(&bindAllDevices, "bind-all-devices", false, "bind all valid devices to usbip")
 }
 
 func listDevices(w http.ResponseWriter, req *http.Request) {
-	usbipLocalDevicesOutput, err := exec.Command("usbip", "list", "-p", "-l").Output()
+	localDevices, err := usbip.GetLocalDevices()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("could not list local usbip devices: %s", err), http.StatusInternalServerError)
-		return
-	}
-
-	localDevices, err := parseLocalDevices(string(usbipLocalDevicesOutput))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("could not parse local usbip devices: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("could not list local usb devices: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -55,6 +31,19 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 		udevInfo, err := usbip.GetLocalDeviceInfo(device)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to get device info for %s: %s", device, err), http.StatusInternalServerError)
+			continue
+		}
+
+		if udevInfo.Driver != "usbip-host" && bindAllDevices {
+			// Device is not bound to usbip driver, do that now.
+			err := usbip.BindDevice(device)
+			if err != nil {
+				// Log but don't error - need to continue on to
+				// return list of other devices.
+				fmt.Printf("Failed to bind device %s: %v\n", device, err)
+				continue
+			}
+			fmt.Printf("Bound device %s\n", device)
 		}
 
 		devicesMetadata = append(devicesMetadata, udevInfo)
@@ -71,6 +60,8 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	pflag.Parse()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /devices", listDevices)
 
