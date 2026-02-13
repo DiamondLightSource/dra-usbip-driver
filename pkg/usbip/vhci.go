@@ -59,7 +59,7 @@ func ListImportedDevices() ([]*importedDevice, error) {
 		// Have to provide the format string, otherwise the
 		// leading zeroes in the fields cause e.g port "0008"
 		// to be interpreted as an invalid octal number.
-		_, err := fmt.Fscanf(reader, "%s  %d %d %d %d %d %s\n",
+		_, err := fmt.Fscanf(reader, "%s  %d %d %d %x %d %s\n",
 			&hub, &port, &status, &speed, &dev, &sock, &busID)
 
 		if err == io.EOF {
