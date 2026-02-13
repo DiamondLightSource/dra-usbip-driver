@@ -38,7 +38,7 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 		return nil, fmt.Errorf("could not fetch devices from %s: %w", agent, err)
 	}
 
-	var devicesMetadata []devicemetadata.Metadata
+	var devicesMetadata []devicemetadata.UdevadmInfo
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&devicesMetadata)
 	if err != nil {
@@ -50,16 +50,16 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 	for _, meta := range devicesMetadata {
 		attrs := map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
 			"vendor": {
-				StringValue: ptr.To(fmt.Sprintf("%04x", meta.Vendor)),
+				StringValue: ptr.To(meta.VendorID),
 			},
 			"product": {
-				StringValue: ptr.To(fmt.Sprintf("%04x", meta.Product)),
+				StringValue: ptr.To(meta.ModelID),
 			},
 		}
 
-		if meta.Serial != "" {
+		if meta.SerialShort != "" {
 			attrs["serial"] = resourceapi.DeviceAttribute{
-				StringValue: ptr.To(meta.Serial),
+				StringValue: ptr.To(meta.SerialShort),
 			}
 		}
 
@@ -68,9 +68,9 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 				StringValue: ptr.To(meta.VendorName),
 			}
 		}
-		if meta.ProductName != "" {
+		if meta.ModelName != "" {
 			attrs["productName"] = resourceapi.DeviceAttribute{
-				StringValue: ptr.To(meta.ProductName),
+				StringValue: ptr.To(meta.ModelName),
 			}
 		}
 
@@ -79,7 +79,7 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 		// USB hubs may have dots in, e.g "3-1.5", so are not valid.
 		// Replace the dot with a lowercase "d" which can be turned
 		// back later when needed for attaching with usbip.
-		deviceName := strings.ReplaceAll(meta.BusID, ".", "d")
+		deviceName := strings.ReplaceAll(meta.SysName, ".", "d")
 
 		d := resourceapi.Device{
 			Name:       deviceName,
