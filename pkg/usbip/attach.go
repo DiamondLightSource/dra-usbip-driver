@@ -1,12 +1,15 @@
 package usbip
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"time"
 
 	"k8s.io/klog/v2"
+
+	"github.com/cenkalti/backoff/v5"
 )
 
 // Attach a device by its remote host/bus,
@@ -20,25 +23,30 @@ func AttachDevice(remoteHost, remoteBusID string) (string, error) {
 		return "", fmt.Errorf("attach command failed: %w", err)
 	}
 
-	startTime := time.Now()
-
 	// Local device can't be found immediately.
-	// Check in a loop.
-	for {
+	// Retry with backoff, waiting up to 10 seconds.
+	getLocalBus := func() (string, error) {
 		_, localBus, err := GetLocalFromRemote(remoteHost, remoteBusID)
 		if errors.Is(err, RemoteDeviceNotFoundError) {
-			if time.Since(startTime) > 10*time.Second {
-				return "", fmt.Errorf("could not find local bus of newly mounted device within timeout")
-			}
-			// klog.Infof("waited %s, new local device not found yet", time.Since(startTime), err)
-			time.Sleep(100 * time.Millisecond)
-			continue
+			// Return error to retry if device not found.
+			return "", err
 		} else if err != nil {
-			return "", fmt.Errorf("error gettinng local device: %w", err)
+			// Don't retry for any other errors.
+			return "", backoff.Permanent(fmt.Errorf("error getting local device: %w", err))
 		}
 
 		return localBus, nil
 	}
+
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.InitialInterval = 50 * time.Millisecond
+
+	localBus, err := backoff.Retry(context.TODO(), getLocalBus, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(10*time.Second))
+	if err != nil {
+		return "", fmt.Errorf("error finding local device after attaching: %w", err)
+	}
+
+	return localBus, nil
 }
 
 func DetachDevice(remoteHost, remoteBusID string, expectedMinor int64) error {
