@@ -3,7 +3,6 @@ module gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver
 go 1.24.11
 
 require (
-	github.com/google/gousb v1.1.3
 	github.com/spf13/pflag v1.0.10
 	k8s.io/api v0.34.0
 	k8s.io/apimachinery v0.34.0
