@@ -188,6 +188,7 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	// Fetch the current attached devices state from the checkpoint file.
 	checkpoint := newCheckpoint()
 	if err := s.checkpointManager.GetCheckpoint(DriverPluginCheckpointFile, checkpoint); err != nil {
+		klog.Errorf("unprepare: unable to sync from checkpoint: %v", err)
 		return fmt.Errorf("unable to sync from checkpoint: %v", err)
 	}
 	preparedClaims := checkpoint.V1.PreparedClaims
@@ -198,17 +199,20 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	}
 
 	if err := s.unprepareDevices(claimUID, preparedClaims[claimUID]); err != nil {
+		klog.Errorf("unprepare failed: %v", err)
 		return fmt.Errorf("unprepare failed: %v", err)
 	}
 
 	err := s.cdi.DeleteClaimSpecFile(claimUID)
 	if err != nil {
+		klog.Errorf("unable to delete CDI spec file for claim: %v", err)
 		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
 	}
 
 	// Remove the claim from the checkpoint file on disk.
 	delete(preparedClaims, claimUID)
 	if err := s.checkpointManager.CreateCheckpoint(DriverPluginCheckpointFile, checkpoint); err != nil {
+		klog.Errorf("unprepare: unable to sync back to checkpoint: %v", err)
 		return fmt.Errorf("unable to sync back to checkpoint: %v", err)
 	}
 
