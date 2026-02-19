@@ -35,6 +35,12 @@ func AttachDevice(remoteHost, remoteBusID string) (string, error) {
 			return "", backoff.Permanent(fmt.Errorf("error getting local device: %w", err))
 		}
 
+		// Ensure that device is also visible with udevadm.
+		_, err = GetLocalDeviceInfo(localBus)
+		if err != nil {
+			return "", err
+		}
+
 		return localBus, nil
 	}
 
