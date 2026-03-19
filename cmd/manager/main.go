@@ -25,11 +25,13 @@ import (
 var (
 	agents         []string
 	kubeConfigFile string
+	driverName     string
 )
 
 func init() {
 	pflag.StringSliceVar(&agents, "agent", nil, "one or more agents (host:port) to find devices from")
 	pflag.StringVar(&kubeConfigFile, "kubeconfig", "", "kube config file path")
+	pflag.StringVar(&driverName, "driver-name", "usbip.diamond.ac.uk", "unique name for the driver to identify as")
 }
 
 func getDevices(agent string) ([]resourceapi.Device, error) {
@@ -119,7 +121,7 @@ func main() {
 	resourceSliceController, err := resourceslice.StartController(
 		ctx,
 		resourceslice.Options{
-			DriverName: "usbip",
+			DriverName: driverName,
 			KubeClient: coreclient,
 			ErrorHandler: func(ctx context.Context, err error, msg string) {
 				fmt.Println(err, msg)

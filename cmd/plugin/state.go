@@ -22,6 +22,7 @@ type DeviceState struct {
 	sync.Mutex
 	cdi               *CDIHandler
 	checkpointManager checkpointmanager.CheckpointManager
+	driverName        string
 }
 
 // Need to persist which devices get attached for
@@ -54,8 +55,8 @@ func (ads AttachedDevices) GetDevices() []*drav1.Device {
 // Map of claim UID -> attached devices.
 type PreparedClaims map[string]AttachedDevices
 
-func NewDeviceState() (*DeviceState, error) {
-	cdi, err := NewCDIHandler("/etc/cdi", "usbip", "usbip")
+func NewDeviceState(driverName string) (*DeviceState, error) {
+	cdi, err := NewCDIHandler("/etc/cdi", driverName, "usbip")
 	if err != nil {
 		return nil, fmt.Errorf("unable to create CDI handler: %v", err)
 	}
@@ -73,6 +74,7 @@ func NewDeviceState() (*DeviceState, error) {
 	state := &DeviceState{
 		cdi:               cdi,
 		checkpointManager: checkpointManager,
+		driverName:        driverName,
 	}
 
 	checkpoints, err := state.checkpointManager.ListCheckpoints()
@@ -140,7 +142,7 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (Attached
 	var attachedDevices AttachedDevices
 	for _, result := range claim.Status.Allocation.Devices.Results {
 		// The claim may include allocations meant for other drivers.
-		if result.Driver != "usbip" {
+		if result.Driver != s.driverName {
 			continue
 		}
 

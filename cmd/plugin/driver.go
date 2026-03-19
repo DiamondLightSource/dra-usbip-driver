@@ -19,8 +19,8 @@ type driver struct {
 	state  *DeviceState
 }
 
-func NewDriver(ctx context.Context, kubeClient coreclientset.Interface) (*driver, error) {
-	state, err := NewDeviceState()
+func NewDriver(ctx context.Context, kubeClient coreclientset.Interface, driverName string) (*driver, error) {
+	state, err := NewDeviceState(driverName)
 	if err != nil {
 		return nil, fmt.Errorf("error initialising state: %w", err)
 	}
@@ -40,7 +40,7 @@ func NewDriver(ctx context.Context, kubeClient coreclientset.Interface) (*driver
 		driver,
 		kubeletplugin.KubeClient(kubeClient),
 		kubeletplugin.NodeName(nodeName),
-		kubeletplugin.DriverName("usbip"),
+		kubeletplugin.DriverName(state.driverName),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver helper: %w", err)

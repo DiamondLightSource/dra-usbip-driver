@@ -12,10 +12,12 @@ import (
 
 var (
 	kubeConfigFile string
+	driverName     string
 )
 
 func init() {
 	pflag.StringVar(&kubeConfigFile, "kubeconfig", "", "kube config file path")
+	pflag.StringVar(&driverName, "driver-name", "usbip.diamond.ac.uk", "unique name for the driver to identify as")
 }
 
 func main() {
@@ -34,7 +36,7 @@ func main() {
 		panic(err)
 	}
 
-	driver, err := NewDriver(ctx, coreclient)
+	driver, err := NewDriver(ctx, coreclient, driverName)
 	if err != nil {
 		panic(err)
 	}
