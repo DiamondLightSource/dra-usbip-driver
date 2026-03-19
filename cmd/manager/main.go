@@ -29,7 +29,7 @@ var (
 
 func init() {
 	pflag.StringSliceVar(&agents, "agent", nil, "one or more agents (host:port) to find devices from")
-	pflag.StringVar(&kubeConfigFile, "kubeconfig", "", "kuibe config file path")
+	pflag.StringVar(&kubeConfigFile, "kubeconfig", "", "kube config file path")
 }
 
 func getDevices(agent string) ([]resourceapi.Device, error) {
