@@ -33,7 +33,7 @@ func init() {
 }
 
 func getDevices(agent string) ([]resourceapi.Device, error) {
-	resp, err := http.Get("http://" + agent + ":8105/devices")
+	resp, err := http.Get("http://" + agent + ":13240/devices")
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch devices from %s: %w", agent, err)
 	}

@@ -65,5 +65,5 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /devices", listDevices)
 
-	http.ListenAndServe(":8105", mux)
+	http.ListenAndServe(":13240", mux)
 }
