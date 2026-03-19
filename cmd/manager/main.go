@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 
 	resourceapi "k8s.io/api/resource/v1"
 	coreclientset "k8s.io/client-go/kubernetes"

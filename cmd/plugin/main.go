@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/kubeconfig"
 	"github.com/spf13/pflag"
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/kubeconfig"
 )
 
 var (

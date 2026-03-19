@@ -11,7 +11,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/checkpointmanager"
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
 
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
 )
 
 const (

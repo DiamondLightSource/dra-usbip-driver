@@ -1,4 +1,4 @@
-module gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver
+module github.com/diamondlightsource/dra-usbip-driver
 
 go 1.24.11
 

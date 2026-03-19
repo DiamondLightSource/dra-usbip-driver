@@ -7,7 +7,7 @@ import (
 	cdiparser "tags.cncf.io/container-device-interface/pkg/parser"
 	cdispec "tags.cncf.io/container-device-interface/specs-go"
 
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
 )
 
 const cdiCommonDeviceName = "common"

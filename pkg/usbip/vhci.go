@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 )
 
 const (

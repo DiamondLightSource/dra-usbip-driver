@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/devicemetadata"
-	"gitlab.diamond.ac.uk/sysadmin/container-tools/dra-usbip-driver/pkg/usbip"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
 )
 
 var (
