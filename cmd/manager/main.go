@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/dynamic-resource-allocation/resourceslice"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 )
 
@@ -104,18 +105,18 @@ func main() {
 	if kubeConfigFile == "" {
 		csconfig, err = rest.InClusterConfig()
 		if err != nil {
-			panic(err)
+			klog.Fatalf("Unable to create in-cluster config: %s", err)
 		}
 	} else {
 		csconfig, err = clientcmd.BuildConfigFromFlags("", kubeConfigFile)
 		if err != nil {
-			panic(err)
+			klog.Fatalf("Unable to create config from kubeconfig file: %s", err)
 		}
 	}
 
 	coreclient, err := coreclientset.NewForConfig(csconfig)
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Unable to create core API client: %s", err)
 	}
 
 	resourceSliceController, err := resourceslice.StartController(
@@ -124,15 +125,15 @@ func main() {
 			DriverName: driverName,
 			KubeClient: coreclient,
 			ErrorHandler: func(ctx context.Context, err error, msg string) {
-				fmt.Println(err, msg)
+				klog.Errorf("Error updating resource slices: %s (%s)", err, msg)
 			},
 		},
 	)
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Failed starting resource slice controller: %s", err)
 	}
 
-	fmt.Println("Started controller")
+	klog.Info("Started resource slice controller")
 
 loop:
 	for {
@@ -146,7 +147,7 @@ loop:
 			for _, agent := range agents {
 				devices, err := getDevices(agent)
 				if err != nil {
-					fmt.Println(err)
+					klog.Errorf("Failed to fetch devices from %s: %s", agent, err)
 					continue
 				}
 				resources.Pools[agent] = resourceslice.Pool{

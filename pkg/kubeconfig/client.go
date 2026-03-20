@@ -26,7 +26,7 @@ func GetCoreClient(kubeConfigFile string) (*coreclientset.Clientset, error) {
 
 	coreclient, err := coreclientset.NewForConfig(csconfig)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error creating new client for config: %s", err)
 	}
 
 	return coreclient, nil
