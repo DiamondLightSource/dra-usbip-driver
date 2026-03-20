@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/spf13/pflag"
+	"k8s.io/klog/v2"
 
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/kmod"
@@ -42,10 +42,10 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 			if err != nil {
 				// Log but don't error - need to continue on to
 				// return list of other devices.
-				fmt.Printf("Failed to bind device %s: %v\n", device, err)
+				klog.Errorf("Failed to bind device %s: %s", device, err)
 				continue
 			}
-			fmt.Printf("Bound device %s\n", device)
+			klog.Infof("Bound device %s", device)
 		}
 
 		devicesMetadata = append(devicesMetadata, udevInfo)
@@ -66,12 +66,10 @@ func main() {
 
 	moduleLoaded, err := kmod.IsLoaded("usbip_host")
 	if err != nil {
-		fmt.Println("Unable to check kernel modules: %s", err)
-		os.Exit(1)
+		klog.Fatalf("Unable to check kernel modules: %s", err)
 	}
 	if !moduleLoaded {
-		fmt.Println("usbip_host kernel module is not loaded")
-		os.Exit(1)
+		klog.Fatal("usbip_host kernel module is not loaded")
 	}
 
 	mux := http.NewServeMux()
