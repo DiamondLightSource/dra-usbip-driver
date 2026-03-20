@@ -10,9 +10,9 @@ locally available on a Node and everything can
 be handled by a single plugin DaemonSet, this
 driver is split into three components:
 
-* An **Agent** component that runs on a device
-  outside the cluster, exposing attributes of
-  USB devices connected to it.
+* An **Agent** component that runs on a machine
+  (for example a Raspberry Pi) outside the cluster,
+  exposing attributes of USB devices connected to it.
 * A **Manager** component that runs as one pod
   in the cluster, fetching data from one or more
   Agents and creating ResourceSlice objects in
