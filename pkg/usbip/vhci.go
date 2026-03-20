@@ -79,9 +79,6 @@ func ListImportedDevices() ([]*importedDevice, error) {
 			}
 
 			devices = append(devices, d)
-
-			fmt.Printf("hub=%s port=%d status=%d speed=%d dev=%d sock=%d busid=%s\n",
-				hub, port, status, speed, dev, sock, busID)
 		}
 	}
 
