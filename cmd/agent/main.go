@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/spf13/pflag"
 
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/kmod"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
 )
 
@@ -61,6 +63,16 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	pflag.Parse()
+
+	moduleLoaded, err := kmod.IsLoaded("usbip_host")
+	if err != nil {
+		fmt.Println("Unable to check kernel modules: %s", err)
+		os.Exit(1)
+	}
+	if !moduleLoaded {
+		fmt.Println("usbip_host kernel module is not loaded")
+		os.Exit(1)
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /devices", listDevices)

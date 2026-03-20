@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/kmod"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/kubeconfig"
 	"github.com/spf13/pflag"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -24,11 +26,19 @@ func init() {
 func main() {
 	pflag.Parse()
 
+	moduleLoaded, err := kmod.IsLoaded("vhci_hcd")
+	if err != nil {
+		klog.Fatalf("Unable to check kernel modules: %s", err)
+	}
+	if !moduleLoaded {
+		klog.Fatal("vhci_hcd kernel module is not loaded")
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
 	pluginPath := filepath.Join("/var/lib/kubelet/plugins/", driverName)
-	err := os.MkdirAll(pluginPath, 0750)
+	err = os.MkdirAll(pluginPath, 0750)
 	if err != nil {
 		panic(err)
 	}
