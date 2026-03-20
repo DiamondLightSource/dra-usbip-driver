@@ -83,13 +83,12 @@ func DetachDevice(remoteHost, remoteBusID string, expectedMinor int64) error {
 	}
 
 	var exitError *exec.ExitError
-	output, err := exec.Command("usbip", "detach", fmt.Sprintf("--port=%d", localPort)).Output()
+	_, err = exec.Command("usbip", "detach", fmt.Sprintf("--port=%d", localPort)).Output()
 	if errors.As(err, &exitError) {
 		return fmt.Errorf("usbip detach failed: %s", string(exitError.Stderr))
 	} else if err != nil {
 		return fmt.Errorf("detach command failed: %w", err)
 	}
-	fmt.Println(output)
 
 	return nil
 }
