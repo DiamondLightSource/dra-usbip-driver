@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/kubeconfig"
@@ -26,7 +27,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	err := os.MkdirAll("/var/lib/kubelet/plugins/usbip", 0750)
+	pluginPath := filepath.Join("/var/lib/kubelet/plugins/", driverName)
+	err := os.MkdirAll(pluginPath, 0750)
 	if err != nil {
 		panic(err)
 	}
