@@ -40,17 +40,17 @@ func main() {
 	pluginPath := filepath.Join("/var/lib/kubelet/plugins/", driverName)
 	err = os.MkdirAll(pluginPath, 0750)
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Unable to create kubelet plugin dir: %s", err)
 	}
 
 	coreclient, err := kubeconfig.GetCoreClient(kubeConfigFile)
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Unable to create kube config client: %s", err)
 	}
 
 	driver, err := NewDriver(ctx, coreclient, driverName)
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Error initialising driver: %s", err)
 	}
 
 	<-ctx.Done()
@@ -58,6 +58,6 @@ func main() {
 
 	err = driver.Shutdown()
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Error shutting down driver: %s", err)
 	}
 }
