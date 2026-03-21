@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Architecture &#8212; dra-usbip-driver 0.2.1-7-g77187cd documentation</title>
+    <title>Commissioning a new Raspberry Pi as an Agent Server &#8212; dra-usbip-driver 0.2.1-7-g77187cd documentation</title>
   
   
   
@@ -46,7 +46,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=a5fa425f"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/architecture';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/commission-raspi';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/dra-usbip-driver/switcher.json';
@@ -56,8 +56,8 @@
         </script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reference" href="../reference.html" />
-    <link rel="prev" title="Explanations" href="../explanations.html" />
+    <link rel="next" title="How-to guides" href="../how-to.html" />
+    <link rel="prev" title="Quick start" href="quick-start.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -136,7 +136,7 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
@@ -150,7 +150,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
@@ -272,7 +272,7 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
@@ -286,7 +286,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
@@ -363,7 +363,8 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick start</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Commissioning a new Raspberry Pi as an Agent Server</a></li>
 </ul>
 </div>
 </nav></div>
@@ -405,9 +406,9 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../explanations.html" class="nav-link">Explanations</a></li>
+    <li class="breadcrumb-item"><a href="../tutorials.html" class="nav-link">Tutorials</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Architecture</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Commissioning a new Raspberry Pi as an Agent Server</span></li>
   </ul>
 </nav>
 </div>
@@ -424,57 +425,92 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="architecture">
-<h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">#</a></h1>
-<p>Unlike a typical Kubernetes device driver where devices are locally available
-on a Node and everything can be handled by a single plugin DaemonSet, this
-driver is split into three components to support remote USB devices via USB/IP.</p>
-<img alt="Architecture diagram" class="align-center" src="../_images/architecture.png" />
-<section id="agent">
-<h2>Agent<a class="headerlink" href="#agent" title="Link to this heading">#</a></h2>
-<p>The Agent runs on a machine outside the cluster – for example a Raspberry Pi
-– that has physical USB devices connected. It:</p>
-<ul class="simple">
-<li><p>Discovers locally connected USB devices using <code class="docutils literal notranslate"><span class="pre">usbip</span> <span class="pre">list</span> <span class="pre">--local</span></code></p></li>
-<li><p>Optionally binds devices to the <code class="docutils literal notranslate"><span class="pre">usbip-host</span></code> driver</p></li>
-<li><p>Serves device metadata as JSON over HTTP on port 13240</p></li>
-</ul>
-<p>The Agent is a standalone Go binary, not a container, since it needs direct
-access to host USB devices and kernel modules.</p>
+  <section id="commissioning-a-new-raspberry-pi-as-an-agent-server">
+<h1>Commissioning a new Raspberry Pi as an Agent Server<a class="headerlink" href="#commissioning-a-new-raspberry-pi-as-an-agent-server" title="Link to this heading">#</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
+<p>Choosing the recommended hardware simplifies commissioning as there is a
+pre-built disk image available that includes all necessary software and
+configuration.</p>
 </section>
-<section id="manager">
-<h2>Manager<a class="headerlink" href="#manager" title="Link to this heading">#</a></h2>
-<p>The Manager runs as a single pod inside the cluster. It:</p>
-<ul class="simple">
-<li><p>Polls one or more Agents to discover available USB devices</p></li>
-<li><p>Creates and updates Kubernetes <code class="docutils literal notranslate"><span class="pre">ResourceSlice</span></code> objects representing those
-devices, with attributes like vendor ID, product ID, and serial number</p></li>
-<li><p>Uses the DRA resource slice controller to keep slices in sync</p></li>
-</ul>
+<section id="step-1-obtain-and-assemble-recommended-hardware">
+<h2>Step 1: Obtain and Assemble Recommended Hardware<a class="headerlink" href="#step-1-obtain-and-assemble-recommended-hardware" title="Link to this heading">#</a></h2>
+<p>See <a class="reference internal" href="../reference/recommended-hardware.html"><span class="doc">Recommended Server Hardware</span></a>.</p>
+<p>Any Raspberry Pi 4 or 5 with at least 2GB RAM and at least 16GB microSD
+card is suitable.</p>
 </section>
-<section id="plugin">
-<h2>Plugin<a class="headerlink" href="#plugin" title="Link to this heading">#</a></h2>
-<p>The Plugin runs as a DaemonSet on each node in the cluster. When the Kubelet
-assigns a USB device to a pod, the Plugin:</p>
-<ol class="arabic simple">
-<li><p>Attaches the remote device using <code class="docutils literal notranslate"><span class="pre">usbip</span> <span class="pre">attach</span></code></p></li>
-<li><p>Waits for the device to appear locally via the VHCI driver</p></li>
-<li><p>Creates a CDI (Container Device Interface) spec file so the container
-runtime mounts the device node into the pod</p></li>
-<li><p>Persists state to a checkpoint file so it can detach devices when the pod
-terminates</p></li>
+<section id="step-2-flash-the-agent-server-image">
+<h2>Step 2: Flash the Agent Server Image<a class="headerlink" href="#step-2-flash-the-agent-server-image" title="Link to this heading">#</a></h2>
+<!-- TODO: host a pre-built image and add download link here -->
+<ol class="arabic">
+<li><p>Download the pre-built agent server image.</p></li>
+<li><p>Insert a microSD card of at least 16GB capacity into a card reader
+connected to your computer.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">lsblk</span></code> to identify the device name of the microSD card (e.g.
+<code class="docutils literal notranslate"><span class="pre">/dev/sdb</span></code>).</p></li>
+<li><p>Flash the image to the microSD card. <strong>Be careful</strong> – replace
+<code class="docutils literal notranslate"><span class="pre">/dev/sdX</span></code> with the correct device name for your microSD card as this
+will overwrite the specified device.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>./raspi-agent-server.img<span class="w"> </span><span class="nv">of</span><span class="o">=</span>/dev/sdX<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>4M<span class="w"> </span><span class="nv">status</span><span class="o">=</span>progress<span class="w"> </span><span class="nv">conv</span><span class="o">=</span>fsync
+</pre></div>
+</div>
+</li>
 </ol>
 </section>
-<section id="data-flow">
-<h2>Data flow<a class="headerlink" href="#data-flow" title="Link to this heading">#</a></h2>
-<ol class="arabic simple">
-<li><p>Agent exposes device metadata via HTTP</p></li>
-<li><p>Manager polls Agents and publishes ResourceSlices to the API server</p></li>
-<li><p>User creates a ResourceClaim; the scheduler matches it against ResourceSlices</p></li>
-<li><p>Kubelet calls the Plugin to prepare the claim</p></li>
-<li><p>Plugin attaches the device via USB/IP and creates CDI specs</p></li>
-<li><p>Container runtime uses CDI specs to mount the device into the pod</p></li>
-</ol>
+<section id="step-3-extract-the-raspberry-pi-mac-address">
+<h2>Step 3: Extract the Raspberry Pi MAC Address<a class="headerlink" href="#step-3-extract-the-raspberry-pi-mac-address" title="Link to this heading">#</a></h2>
+<ul>
+<li><p>If you have a Pico with OLED screen, plug it into the Raspberry Pi USB
+port and power on the Pi. The MAC address will be displayed on the
+screen within a minute.</p></li>
+<li><p>Otherwise, boot the Raspberry Pi and get the MAC address from the
+command line:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ip<span class="w"> </span>link<span class="w"> </span>show<span class="w"> </span>eth0
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="step-4-configure-an-ip-address-for-the-raspberry-pi">
+<h2>Step 4: Configure an IP Address for the Raspberry Pi<a class="headerlink" href="#step-4-configure-an-ip-address-for-the-raspberry-pi" title="Link to this heading">#</a></h2>
+<p>Use your DHCP management tool to create a reservation for the Raspberry
+Pi MAC address obtained in Step 3.</p>
+</section>
+<section id="step-5-connect-the-raspberry-pi-to-the-network-and-power-it-on">
+<h2>Step 5: Connect the Raspberry Pi to the Network and Power it On<a class="headerlink" href="#step-5-connect-the-raspberry-pi-to-the-network-and-power-it-on" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Connect the Raspberry Pi to the network using a wired ethernet
+connection.</p></li>
+<li><p>Power on the Raspberry Pi using the USB-C power supply.</p></li>
+<li><p>Wait a few minutes as the Pi will reboot twice to expand the root
+filesystem and set up read-only filesystem mode.</p></li>
+</ul>
+</section>
+<section id="step-6-verify-the-agent-is-working">
+<h2>Step 6: Verify the Agent is Working<a class="headerlink" href="#step-6-verify-the-agent-is-working" title="Link to this heading">#</a></h2>
+<p>From any machine that can reach the Raspberry Pi:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>http://&lt;raspberry_pi_ip_address&gt;:13240/devices
+</pre></div>
+</div>
+<p>You should see a JSON array describing the connected USB devices.</p>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<p>If the agent is not responding, SSH into the Raspberry Pi and check the
+services:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh<span class="w"> </span>local@&lt;raspberry_pi_ip_address&gt;
+<span class="c1"># password is &quot;local&quot;</span>
+
+<span class="c1"># check the status of the services</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>usbipd
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>dra-usbip-agent
+
+<span class="c1"># check their logs for errors</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>usbipd<span class="w"> </span>-e
+journalctl<span class="w"> </span>-u<span class="w"> </span>dra-usbip-agent<span class="w"> </span>-e
+</pre></div>
+</div>
+<p>For more troubleshooting tips see <a class="reference internal" href="../how-to/troubleshoot.html"><span class="doc">Troubleshooting</span></a>.</p>
 </section>
 </section>
 
@@ -489,20 +525,20 @@ terminates</p></li>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../explanations.html"
+       href="quick-start.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Explanations</p>
+        <p class="prev-next-title">Quick start</p>
       </div>
     </a>
     <a class="right-next"
-       href="../reference.html"
+       href="../how-to.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Reference</p>
+        <p class="prev-next-title">How-to guides</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -525,10 +561,14 @@ terminates</p></li>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#agent">Agent</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#manager">Manager</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plugin">Plugin</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-flow">Data flow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-obtain-and-assemble-recommended-hardware">Step 1: Obtain and Assemble Recommended Hardware</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-flash-the-agent-server-image">Step 2: Flash the Agent Server Image</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-extract-the-raspberry-pi-mac-address">Step 3: Extract the Raspberry Pi MAC Address</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-configure-an-ip-address-for-the-raspberry-pi">Step 4: Configure an IP Address for the Raspberry Pi</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-5-connect-the-raspberry-pi-to-the-network-and-power-it-on">Step 5: Connect the Raspberry Pi to the Network and Power it On</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-6-verify-the-agent-is-working">Step 6: Verify the Agent is Working</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
   </nav></div>
 
@@ -536,7 +576,7 @@ terminates</p></li>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/dra-usbip-driver/edit/main/docs/explanations/architecture.md">
+    <a href="https://github.com/DiamondLightSource/dra-usbip-driver/edit/main/docs/tutorials/commission-raspi.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -552,7 +592,7 @@ terminates</p></li>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/explanations/architecture.md.txt"
+      <li><a href="../_sources/tutorials/commission-raspi.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

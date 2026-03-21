@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Architecture &#8212; dra-usbip-driver 0.2.1-7-g77187cd documentation</title>
+    <title>Recommended Server Hardware &#8212; dra-usbip-driver 0.2.1-7-g77187cd documentation</title>
   
   
   
@@ -46,7 +46,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=a5fa425f"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/architecture';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/recommended-hardware';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/dra-usbip-driver/switcher.json';
@@ -56,8 +56,7 @@
         </script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reference" href="../reference.html" />
-    <link rel="prev" title="Explanations" href="../explanations.html" />
+    <link rel="prev" title="CLI reference" href="cli.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -150,14 +149,14 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
@@ -286,14 +285,14 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
@@ -363,7 +362,8 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI reference</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Recommended Server Hardware</a></li>
 </ul>
 </div>
 </nav></div>
@@ -405,9 +405,9 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../explanations.html" class="nav-link">Explanations</a></li>
+    <li class="breadcrumb-item"><a href="../reference.html" class="nav-link">Reference</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Architecture</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Recommended Server Hardware</span></li>
   </ul>
 </nav>
 </div>
@@ -424,57 +424,47 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="architecture">
-<h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">#</a></h1>
-<p>Unlike a typical Kubernetes device driver where devices are locally available
-on a Node and everything can be handled by a single plugin DaemonSet, this
-driver is split into three components to support remote USB devices via USB/IP.</p>
-<img alt="Architecture diagram" class="align-center" src="../_images/architecture.png" />
-<section id="agent">
-<h2>Agent<a class="headerlink" href="#agent" title="Link to this heading">#</a></h2>
-<p>The Agent runs on a machine outside the cluster – for example a Raspberry Pi
-– that has physical USB devices connected. It:</p>
-<ul class="simple">
-<li><p>Discovers locally connected USB devices using <code class="docutils literal notranslate"><span class="pre">usbip</span> <span class="pre">list</span> <span class="pre">--local</span></code></p></li>
-<li><p>Optionally binds devices to the <code class="docutils literal notranslate"><span class="pre">usbip-host</span></code> driver</p></li>
-<li><p>Serves device metadata as JSON over HTTP on port 13240</p></li>
-</ul>
-<p>The Agent is a standalone Go binary, not a container, since it needs direct
-access to host USB devices and kernel modules.</p>
+  <section id="recommended-server-hardware">
+<h1>Recommended Server Hardware<a class="headerlink" href="#recommended-server-hardware" title="Link to this heading">#</a></h1>
+<p>This hardware has been tested and is known to work well as a USB/IP agent
+server.</p>
+<p>If you choose this hardware then a pre-configured Raspberry Pi agent
+image is available to download, see the
+<a class="reference internal" href="../tutorials/commission-raspi.html"><span class="doc">Commissioning a new Raspberry Pi as an Agent Server</span></a>.</p>
+<section id="raspberry-pi-5-8gb-ram">
+<h2>Raspberry Pi 5 8GB RAM<a class="headerlink" href="#raspberry-pi-5-8gb-ram" title="Link to this heading">#</a></h2>
+<p>Raspberry Pi 4 is also suitable. 2GB RAM models have been confirmed to
+work fine.</p>
+<p><img alt="Raspberry Pi 5" src="../_images/pi5.png" /></p>
 </section>
-<section id="manager">
-<h2>Manager<a class="headerlink" href="#manager" title="Link to this heading">#</a></h2>
-<p>The Manager runs as a single pod inside the cluster. It:</p>
-<ul class="simple">
-<li><p>Polls one or more Agents to discover available USB devices</p></li>
-<li><p>Creates and updates Kubernetes <code class="docutils literal notranslate"><span class="pre">ResourceSlice</span></code> objects representing those
-devices, with attributes like vendor ID, product ID, and serial number</p></li>
-<li><p>Uses the DRA resource slice controller to keep slices in sync</p></li>
-</ul>
+<section id="microsd-card-16gb">
+<h2>MicroSD Card 16GB<a class="headerlink" href="#microsd-card-16gb" title="Link to this heading">#</a></h2>
+<p>e.g. SanDisk Ultra 16GB or larger.</p>
+<p><img alt="SanDisk Ultra" src="../_images/sandisk.png" /></p>
 </section>
-<section id="plugin">
-<h2>Plugin<a class="headerlink" href="#plugin" title="Link to this heading">#</a></h2>
-<p>The Plugin runs as a DaemonSet on each node in the cluster. When the Kubelet
-assigns a USB device to a pod, the Plugin:</p>
-<ol class="arabic simple">
-<li><p>Attaches the remote device using <code class="docutils literal notranslate"><span class="pre">usbip</span> <span class="pre">attach</span></code></p></li>
-<li><p>Waits for the device to appear locally via the VHCI driver</p></li>
-<li><p>Creates a CDI (Container Device Interface) spec file so the container
-runtime mounts the device node into the pod</p></li>
-<li><p>Persists state to a checkpoint file so it can detach devices when the pod
-terminates</p></li>
-</ol>
+<section id="high-quality-passively-cooled-case">
+<h2>High Quality Passively Cooled Case<a class="headerlink" href="#high-quality-passively-cooled-case" title="Link to this heading">#</a></h2>
+<p>e.g. Geekworm Raspberry Pi 5 Case (P573)</p>
+<p><img alt="Geekworm Case" src="../_images/pi-case.png" /></p>
 </section>
-<section id="data-flow">
-<h2>Data flow<a class="headerlink" href="#data-flow" title="Link to this heading">#</a></h2>
-<ol class="arabic simple">
-<li><p>Agent exposes device metadata via HTTP</p></li>
-<li><p>Manager polls Agents and publishes ResourceSlices to the API server</p></li>
-<li><p>User creates a ResourceClaim; the scheduler matches it against ResourceSlices</p></li>
-<li><p>Kubelet calls the Plugin to prepare the claim</p></li>
-<li><p>Plugin attaches the device via USB/IP and creates CDI specs</p></li>
-<li><p>Container runtime uses CDI specs to mount the device into the pod</p></li>
-</ol>
+<section id="power-supply">
+<h2>Power Supply<a class="headerlink" href="#power-supply" title="Link to this heading">#</a></h2>
+<p>Official Raspberry Pi 27W USB-C Power Supply</p>
+<p><img alt="Raspberry Pi Power Supply" src="../_images/raspi-ps.png" /></p>
+</section>
+<section id="raspberry-pi-pico-with-pico-oled-1-3-display">
+<h2>Raspberry Pi Pico with Pico OLED 1.3” Display<a class="headerlink" href="#raspberry-pi-pico-with-pico-oled-1-3-display" title="Link to this heading">#</a></h2>
+<p>This is used for easily extracting the MAC address of the Raspberry Pi
+during commissioning, without needing to connect a monitor or keyboard.</p>
+<p><img alt="Pico OLED" src="../_images/pico-led.png" /></p>
+</section>
+<section id="alternative-power-supply">
+<h2>Alternative Power Supply<a class="headerlink" href="#alternative-power-supply" title="Link to this heading">#</a></h2>
+<p>If you plan on running multiple Pis, a modern GaN USB-C Power Delivery
+supply with multiple ports is a good alternative. Make sure it can
+provide at least 5A at 5V per Pi.</p>
+<p>e.g. Ugreen Nexode 200W</p>
+<p><img alt="Ugreen Nexode" src="../_images/ugreen-ps.png" /></p>
 </section>
 </section>
 
@@ -489,22 +479,13 @@ terminates</p></li>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../explanations.html"
+       href="cli.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Explanations</p>
+        <p class="prev-next-title">CLI reference</p>
       </div>
-    </a>
-    <a class="right-next"
-       href="../reference.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Reference</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
@@ -525,10 +506,12 @@ terminates</p></li>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#agent">Agent</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#manager">Manager</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plugin">Plugin</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-flow">Data flow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#raspberry-pi-5-8gb-ram">Raspberry Pi 5 8GB RAM</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#microsd-card-16gb">MicroSD Card 16GB</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-quality-passively-cooled-case">High Quality Passively Cooled Case</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#power-supply">Power Supply</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#raspberry-pi-pico-with-pico-oled-1-3-display">Raspberry Pi Pico with Pico OLED 1.3” Display</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#alternative-power-supply">Alternative Power Supply</a></li>
 </ul>
   </nav></div>
 
@@ -536,7 +519,7 @@ terminates</p></li>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/dra-usbip-driver/edit/main/docs/explanations/architecture.md">
+    <a href="https://github.com/DiamondLightSource/dra-usbip-driver/edit/main/docs/reference/recommended-hardware.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -552,7 +535,7 @@ terminates</p></li>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/explanations/architecture.md.txt"
+      <li><a href="../_sources/reference/recommended-hardware.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
