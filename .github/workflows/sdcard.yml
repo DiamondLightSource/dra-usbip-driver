@@ -19,6 +19,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost
+          sudo apt-get -qq purge -y 'dotnet-*' 'aspnet*' 'mono-*' google-chrome-stable firefox 2>/dev/null || true
+          sudo apt-get -qq autoremove -y 2>/dev/null || true
+          sudo docker system prune --all --force --volumes 2>/dev/null || true
+          df -h /
+
+      - name: Set up QEMU for arm64 emulation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       - name: Build Pi image
         id: build
         uses: usimd/pi-gen-action@v1
@@ -35,8 +48,7 @@ jobs:
           enable-cloud-init: 0
           compression: xz
           compression-level: 6
-          export-last-stage-only: true
-          increase-runner-disk-size: true
+          export-last-stage-only: false
           verbose-output: true
           docker-opts: -e AGENT_VERSION=${{ inputs.agent-version }}
 
