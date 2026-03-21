@@ -25,6 +25,12 @@ jobs:
       contents: read
       packages: write
 
+  helm:
+    uses: ./.github/workflows/_helm.yml
+    permissions:
+      contents: read
+      packages: write
+
   docs:
     uses: ./.github/workflows/_docs.yml
     permissions:
