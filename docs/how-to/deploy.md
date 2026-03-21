@@ -1,4 +1,4 @@
-# Deploy to Kubernetes
+# Install the manager and plugin on Kubernetes
 
 This guide covers deploying the manager and plugin to a Kubernetes cluster
 using Helm.
