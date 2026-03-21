@@ -40,7 +40,7 @@ def get_versions(ref: str, add: str | None) -> list[str]:
     tags = get_sorted_tags_list()
 
     versions: list[str] = []
-    for version in ["master", "main"] + tags:
+    for version in ["main"] + tags:
         if version in builds:
             versions.append(version)
             builds.remove(version)
