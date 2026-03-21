@@ -1,0 +1,22 @@
+{
+    "name": "Go Developer Container",
+    "image": "mcr.microsoft.com/devcontainers/go:1.24",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "go.lintTool": "golangci-lint",
+                "go.lintFlags": ["--fast"]
+            },
+            "extensions": [
+                "golang.go",
+                "github.vscode-github-actions",
+                "redhat.vscode-yaml",
+                "ms-azuretools.vscode-docker"
+            ]
+        }
+    },
+    "postCreateCommand": "go mod download && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+}

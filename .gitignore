@@ -1,0 +1,17 @@
+# Binaries
+agent
+manager
+plugin
+*.exe
+
+# Test output
+coverage.out
+
+# Build artifacts
+build/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
