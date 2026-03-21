@@ -1,13 +1,8 @@
 # How-to guides
 
 ```{toctree}
-:maxdepth: 1
+:maxdepth: 2
 
-how-to/setup-agent
-how-to/deploy
-how-to/run-ci-locally
-how-to/run-sphinx
-how-to/use-devcontainer
-how-to/troubleshoot
-how-to/contribute
+how-to/user
+how-to/developer
 ```

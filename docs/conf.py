@@ -91,6 +91,7 @@ html_theme_options = {
     "check_switcher": False,
     "navbar_end": ["theme-switcher", "icon-links", "version-switcher"],
     "navigation_with_keys": False,
+    "show_nav_level": 2,
 }
 
 html_context = {
