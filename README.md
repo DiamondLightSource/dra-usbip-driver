@@ -1,7 +1,15 @@
+[![CI](https://github.com/DiamondLightSource/dra-usbip-driver/actions/workflows/ci.yml/badge.svg)](https://github.com/DiamondLightSource/dra-usbip-driver/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+
 # dra-usbip-driver
 
 Kubernetes DRA driver for accessing USB devices
 outside of the cluster via USB/IP.
+
+Source          | <https://github.com/DiamondLightSource/dra-usbip-driver>
+:---:           | :---:
+Documentation   | <https://DiamondLightSource.github.io/dra-usbip-driver>
+Releases        | <https://github.com/DiamondLightSource/dra-usbip-driver/releases>
 
 ## Architecture
 
@@ -23,4 +31,8 @@ driver is split into three components:
   devices with USB/IP and telling the Kubelet
   how to mount the device to the pod.
 
+<!-- README only content. Anything below this line won't be included in index.md -->
+
 ![architecture diagram](docs/architecture.png)
+
+See <https://DiamondLightSource.github.io/dra-usbip-driver> for full documentation.

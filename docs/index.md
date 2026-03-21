@@ -2,23 +2,9 @@
 html_theme.sidebar_secondary.remove: true
 ---
 
-# dra-usbip-driver
-
-Kubernetes DRA driver for accessing USB devices outside of the cluster via USB/IP.
-
-## Architecture
-
-Unlike a typical device driver where devices are locally available on a Node
-and everything can be handled by a single plugin DaemonSet, this driver is
-split into three components:
-
-- An **Agent** runs on a machine (for example a Raspberry Pi) outside the
-  cluster, exposing attributes of USB devices connected to it.
-- A **Manager** runs as one pod in the cluster, fetching data from one or more
-  Agents and creating ResourceSlice objects to represent the USB devices.
-- The **Plugin** runs as a DaemonSet, handling requests from the Kubelet to
-  prepare resource claims by attaching remote devices with USB/IP and telling
-  the Kubelet how to mount the device to the pod.
+```{include} ../README.md
+:end-before: <!-- README only content
+```
 
 ```{image} architecture.png
 :alt: Architecture diagram
