@@ -1,7 +1,7 @@
 # Binaries
-agent
-manager
-plugin
+/agent
+/manager
+/plugin
 *.exe
 
 # Test output
@@ -19,3 +19,7 @@ _build/
 
 # Local settings
 .claude/settings.local.json
+
+# helm outputs
+**/charts
+**/Chart.lock

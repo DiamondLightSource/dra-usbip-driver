@@ -26,6 +26,9 @@ No additional setup is needed after opening the project in the devcontainer.
 
 Once the container is ready you can immediately:
 
-- Build and test Go code (`go test ./...`, `golangci-lint run`)
-- Build the documentation (`uv run sphinx-build docs docs/_build/html`) — see
-  {doc}`/how-to/run-sphinx` for more details
+- `make build` — build the manager and plugin
+- `make agent` — cross-compile the agent
+- `make ci` — run linting, tests, and docs build in parallel
+- `make docs` / `make docs-live` — build or live-preview the documentation
+
+See {doc}`/how-to/run-ci-locally` and {doc}`/how-to/run-sphinx` for more details.

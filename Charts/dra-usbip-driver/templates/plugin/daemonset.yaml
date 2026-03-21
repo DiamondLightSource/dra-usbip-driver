@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "dra-usbip-driver.fullname" . }}-plugin
+  labels:
+    {{- include "dra-usbip-driver.labels" . | nindent 4 }}
+    app.kubernetes.io/component: plugin
+spec:
+  selector:
+    matchLabels:
+      {{- include "dra-usbip-driver.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: plugin
+  template:
+    metadata:
+      labels:
+        {{- include "dra-usbip-driver.labels" . | nindent 8 }}
+        app.kubernetes.io/component: plugin
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dra-usbip-driver.serviceAccountName" . }}-plugin
+      # Almost everything works without hostNetwork, except if
+      # the plugin pod is restarted any currently attached devices
+      # won't be properly detached when their pods are deleted.
+      # The device is detached *locally* by usbip properly,
+      # but the underlying vhci_hcd driver seems to have lost
+      # the tcp connection needed to tell the remote side
+      # that the device is being returned to it.
+      hostNetwork: true
+      containers:
+        - name: plugin
+          image: "{{ .Values.plugin.image.repository }}:{{ .Values.plugin.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.plugin.image.pullPolicy }}
+          command: ["/plugin"]
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          {{- with .Values.plugin.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: kube-plugins
+              mountPath: /var/lib/kubelet/plugins
+            - name: kube-plugins-registry
+              mountPath: /var/lib/kubelet/plugins_registry
+            - name: sys-devices
+              mountPath: /sys/devices
+            - name: sys-bus
+              mountPath: /sys/bus
+            - name: etc-cdi
+              mountPath: /etc/cdi
+            # usbip writes out status files for each port to
+            # a directory in /var/run/vhci_hcd. But it also
+            # deletes and recreates that directory, so can't
+            # use it as a mount path because the mount will
+            # break when it removes it. To avoid that, give
+            # all of /var/run as the mount point instead.
+            - name: var-run
+              mountPath: /var/run
+      volumes:
+        - name: kube-plugins
+          hostPath:
+            path: /var/lib/kubelet/plugins
+        - name: kube-plugins-registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+        - name: sys-devices
+          hostPath:
+            path: /sys/devices
+        - name: sys-bus
+          hostPath:
+            path: /sys/bus
+        - name: etc-cdi
+          hostPath:
+            path: /etc/cdi
+        - name: var-run
+          hostPath:
+            path: /var/run
+      {{- with .Values.plugin.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.plugin.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.plugin.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
