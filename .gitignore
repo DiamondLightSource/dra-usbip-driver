@@ -1,0 +1,21 @@
+# Binaries
+agent
+manager
+plugin
+*.exe
+
+# Test output
+coverage.out
+
+# Build artifacts
+build/
+_build/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
+
+# Local settings
+.claude/settings.local.json

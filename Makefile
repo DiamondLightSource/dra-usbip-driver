@@ -8,3 +8,20 @@ agent-%: clean-agent
 clean-agent:
 	rm -f agent
 
+.PHONY: lint test docs docs-live ci
+
+lint:
+	golangci-lint run
+
+test:
+	go test -v -race ./...
+
+docs:
+	uv run sphinx-build -W --keep-going docs docs/_build/html
+
+docs-live:
+	uv run sphinx-autobuild docs docs/_build/html
+
+ci:
+	$(MAKE) -j lint test docs
+

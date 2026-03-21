@@ -1,0 +1,6 @@
+sphinx
+pydata-sphinx-theme
+myst-parser
+sphinx-copybutton
+sphinx-design
+sphinx-autobuild

@@ -1,0 +1,65 @@
+on:
+  workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        description: If true, pushes images to container registry
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - containerfile: containers/Containerfile.manager
+            image-name: dra-usbip-driver-manager
+          - containerfile: containers/Containerfile.plugin
+            image-name: dra-usbip-driver-plugin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and export to Docker local cache
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: ${{ matrix.containerfile }}
+          load: true
+          tags: test-${{ matrix.image-name }}
+
+      - name: Create tags for publishing image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image-name }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Push image to container registry
+        if: inputs.publish && github.ref_type == 'tag'
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: ${{ matrix.containerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
