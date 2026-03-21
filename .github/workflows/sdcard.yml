@@ -44,7 +44,11 @@ jobs:
           sudo mount "${LOOP}p2" /mnt
           sudo mount "${LOOP}p1" /mnt/boot/firmware
 
-          # Set up DNS for chroot
+          # Set up virtual filesystems and DNS for chroot
+          sudo mount -t proc proc /mnt/proc
+          sudo mount -t sysfs sys /mnt/sys
+          sudo mount --bind /dev /mnt/dev
+          sudo mount --bind /dev/pts /mnt/dev/pts
           sudo cp /etc/resolv.conf /mnt/etc/resolv.conf
 
           # Configure first-boot user (local/local)
@@ -184,9 +188,13 @@ jobs:
           # Clean up
           sudo rm /mnt/etc/resolv.conf
 
-      - name: Unmount and compress
+      - name: Unmount
         if: always()
         run: |
+          sudo umount /mnt/dev/pts || true
+          sudo umount /mnt/dev || true
+          sudo umount /mnt/sys || true
+          sudo umount /mnt/proc || true
           sudo umount /mnt/boot/firmware || true
           sudo umount /mnt || true
           sudo losetup -d "$LOOP" || true
