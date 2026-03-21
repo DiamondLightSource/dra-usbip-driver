@@ -3,6 +3,7 @@
 ```{toctree}
 :maxdepth: 1
 
+how-to/setup-agent
 how-to/deploy
 how-to/run-ci-locally
 how-to/run-sphinx

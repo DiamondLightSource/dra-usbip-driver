@@ -1,4 +1,4 @@
-# Run Sphinx
+# Build the docs locally
 
 This guide explains how to build and preview the project documentation locally
 using Sphinx. Makefile targets are provided so you don't need to remember the
