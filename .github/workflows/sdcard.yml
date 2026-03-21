@@ -60,7 +60,7 @@ jobs:
 
           # Install USB/IP
           apt-get update
-          apt-get install -y usbip
+          apt-get install -y --no-install-recommends usbip
           apt-get clean
 
           # Configure USB/IP kernel modules
