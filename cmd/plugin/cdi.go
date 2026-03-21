@@ -45,7 +45,7 @@ func (cdi *CDIHandler) CreateCommonSpecFile() error {
 				Name: cdiCommonDeviceName,
 				ContainerEdits: cdispec.ContainerEdits{
 					Env: []string{
-						fmt.Sprintf("USBIP_ACTIVE=true"),
+						"USBIP_ACTIVE=true",
 					},
 				},
 			},

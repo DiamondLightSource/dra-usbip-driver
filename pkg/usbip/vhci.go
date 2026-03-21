@@ -17,10 +17,10 @@ const (
 )
 
 const (
-	StatusNull        int = 4
-	StatusNotAssigned     = 5
-	StatusUsed            = 6
-	StatusError           = 7
+	StatusNull        = 4
+	StatusNotAssigned = 5
+	StatusUsed        = 6
+	StatusError       = 7
 )
 
 type importedDevice struct {
@@ -137,7 +137,9 @@ func GetLocalDeviceInfo(localBusID string) (*devicemetadata.UdevadmInfo, error) 
 	}
 
 	udevInfo := &devicemetadata.UdevadmInfo{}
-	json.Unmarshal(udevInfoJson, &udevInfo)
+	if err := json.Unmarshal(udevInfoJson, &udevInfo); err != nil {
+		return nil, fmt.Errorf("could not parse udev info for %s: %w", localBusID, err)
+	}
 
 	return udevInfo, nil
 }
