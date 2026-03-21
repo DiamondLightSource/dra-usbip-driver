@@ -28,9 +28,14 @@ jobs:
           df -h /
 
       - name: Set up QEMU for arm64 emulation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y qemu-user-static binfmt-support
+          # Ensure qemu-aarch64 exists (build-docker.sh looks for it
+          # by this name, but the package installs qemu-aarch64-static)
+          sudo ln -sf /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64
+          # Verify
+          qemu-aarch64 --version
 
       - name: Clone and configure pi-gen
         run: |
