@@ -37,10 +37,12 @@ jobs:
           locale: en_GB.UTF-8
           timezone: Europe/London
           enable-ssh: 1
+          enable-cloud-init: 0
           compression: xz
           compression-level: 6
           export-last-stage-only: true
           increase-runner-disk-size: true
+          verbose-output: true
           docker-opts: -e AGENT_VERSION=${{ inputs.agent-version }}
 
       - name: Attach image to release
