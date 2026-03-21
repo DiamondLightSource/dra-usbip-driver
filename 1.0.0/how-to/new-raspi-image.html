@@ -1,0 +1,847 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Create a New Raspberry Pi Boot Image From Scratch &#8212; dra-usbip-driver 1.0.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=a5fa425f"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/new-raspi-image';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/dra-usbip-driver/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Updating an Existing Raspberry Pi Boot Image" href="update-raspi-image.html" />
+    <link rel="prev" title="Install the manager and plugin on Kubernetes" href="deploy.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">dra-usbip-driver</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/dra-usbip-driver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/dra-usbip-driver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="user.html">User guides</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup-agent.html">Install the agent on a USB/IP host</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deploy.html">Install the manager and plugin on Kubernetes</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Create a New Raspberry Pi Boot Image From Scratch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="update-raspi-image.html">Updating an Existing Raspberry Pi Boot Image</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="developer.html">Developer guides</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="run-ci-locally.html">Run CI checks locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="run-sphinx.html">Build the docs locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use-devcontainer.html">Use the devcontainer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to guides</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="user.html" class="nav-link">User guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Create a New Raspberry Pi Boot Image From Scratch</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="create-a-new-raspberry-pi-boot-image-from-scratch">
+<h1>Create a New Raspberry Pi Boot Image From Scratch<a class="headerlink" href="#create-a-new-raspberry-pi-boot-image-from-scratch" title="Link to this heading">#</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
+<p>Normal operation for setting up a new Raspberry Pi is to use the provided
+pre-built image. See <a class="reference internal" href="../tutorials/commission-raspi.html"><span class="doc">Commissioning a new Raspberry Pi as an Agent Server</span></a>.</p>
+<p>This page is only needed if you want to create a completely new SD card
+image, perhaps because a new version of Raspberry Pi OS has been released.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Images can also be built automatically using the <strong>Build SD Card Image</strong>
+GitHub Actions workflow. The resulting image will be attached to the
+corresponding <a class="reference external" href="https://github.com/DiamondLightSource/dra-usbip-driver/releases">GitHub Release</a>.</p>
+<p>To trigger the build, go to <strong>Actions → Build SD Card Image → Run
+workflow</strong>, enter the release tag (e.g. <code class="docutils literal notranslate"><span class="pre">v0.3.0</span></code>), and click <strong>Run
+workflow</strong>.</p>
+</div>
+<p>If you just want to update the agent version on an existing image, see
+<a class="reference internal" href="update-raspi-image.html"><span class="doc">Updating an Existing Raspberry Pi Boot Image</span></a>.</p>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">#</a></h2>
+<p>You will need:</p>
+<ul class="simple">
+<li><p>A computer running Linux with sudo privileges</p></li>
+<li><p>A microSD card of at least 16GB capacity</p></li>
+<li><p>A microSD card reader connected to your computer</p></li>
+<li><p>A Raspberry Pi 4 or 5 (see <a class="reference internal" href="../reference/recommended-hardware.html"><span class="doc">Recommended Server Hardware</span></a>)</p></li>
+<li><p>A USB stick of at least 8GB capacity to store the backup image</p></li>
+</ul>
+</section>
+<section id="step-1-image-the-microsd-card-with-raspberry-pi-os">
+<h2>Step 1: Image the microSD Card with Raspberry Pi OS<a class="headerlink" href="#step-1-image-the-microsd-card-with-raspberry-pi-os" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p>Download the latest ‘Raspberry Pi OS Lite’ image from the
+<a class="reference external" href="https://www.raspberrypi.com/software/operating-systems/">Raspberry Pi website</a>.
+The Lite version is the last option on the linked page.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">lsblk</span></code> to get a list of block devices before inserting the
+microSD card.</p></li>
+<li><p>Insert the microSD card and use <code class="docutils literal notranslate"><span class="pre">lsblk</span></code> again to identify the device
+name (e.g. <code class="docutils literal notranslate"><span class="pre">/dev/sdb</span></code>).</p></li>
+<li><p>Uncompress the downloaded image:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/Downloads
+unxz<span class="w"> </span>./2025-12-04-raspios-trixie-arm64-lite.img.xz
+</pre></div>
+</div>
+</li>
+<li><p>Write the image to the microSD card. Replace <code class="docutils literal notranslate"><span class="pre">/dev/sdX</span></code> with the
+actual device name. <strong>Be careful</strong> as this will overwrite the
+specified device.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>./2025-12-04-raspios-trixie-arm64-lite.img<span class="w"> </span><span class="nv">of</span><span class="o">=</span>/dev/sdX<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>4M<span class="w"> </span><span class="nv">status</span><span class="o">=</span>progress<span class="w"> </span><span class="nv">conv</span><span class="o">=</span>fsync
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-2-configure-the-raspberry-pi-os-image">
+<h2>Step 2: Configure the Raspberry Pi OS Image<a class="headerlink" href="#step-2-configure-the-raspberry-pi-os-image" title="Link to this heading">#</a></h2>
+<p>These steps must be done before the first boot.</p>
+<ol class="arabic">
+<li><p>Mount the microSD card boot partition:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>sdcard-bootfs
+sudo<span class="w"> </span>mount<span class="w"> </span>/dev/sdX1<span class="w"> </span>sdcard-bootfs
+<span class="nb">cd</span><span class="w"> </span>sdcard-bootfs
+</pre></div>
+</div>
+</li>
+<li><p>Enable SSH:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>touch<span class="w"> </span>ssh
+</pre></div>
+</div>
+</li>
+<li><p>Create a user <code class="docutils literal notranslate"><span class="pre">local</span></code> with password <code class="docutils literal notranslate"><span class="pre">local</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;local:</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>openssl<span class="w"> </span>passwd<span class="w"> </span>-6<span class="w"> </span>-stdin<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>userconf.txt
+</pre></div>
+</div>
+</li>
+<li><p>If you need a static IP address, edit <code class="docutils literal notranslate"><span class="pre">cmdline.txt</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>vim<span class="w"> </span>cmdline.txt
+<span class="c1"># add &quot; ip=&lt;your_static_ip_address&gt;&quot; at the end of the single line</span>
+</pre></div>
+</div>
+</li>
+<li><p>Unmount the boot partition:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>..
+sudo<span class="w"> </span>umount<span class="w"> </span>sdcard-bootfs
+sudo<span class="w"> </span>umount<span class="w"> </span>/dev/sdX<span class="w">  </span><span class="c1"># there may be a second mount point</span>
+rmdir<span class="w"> </span>sdcard-bootfs
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-3-first-boot-and-connect-to-internet">
+<h2>Step 3: First Boot and Connect to Internet<a class="headerlink" href="#step-3-first-boot-and-connect-to-internet" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p>Insert the microSD card into your Raspberry Pi and power it on.</p></li>
+<li><p>SSH into the Raspberry Pi. The username is <code class="docutils literal notranslate"><span class="pre">local</span></code> and the password is
+<code class="docutils literal notranslate"><span class="pre">local</span></code>. You may need to check your router for the assigned IP address
+or use the static IP set above.</p></li>
+<li><p>If you do not have internet access, temporarily connect to WiFi:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>raspi-config
+<span class="c1"># Select &quot;System Options&quot; -&gt; &quot;Wireless LAN&quot;</span>
+<span class="c1"># Enter your SSID and password</span>
+</pre></div>
+</div>
+</li>
+<li><p>Update the system:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>update
+sudo<span class="w"> </span>apt<span class="w"> </span>upgrade<span class="w"> </span>-y
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>git<span class="w"> </span>vim
+</pre></div>
+</div>
+</li>
+<li><p>Record the Raspberry Pi’s MAC address:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ip<span class="w"> </span>link<span class="w"> </span>show<span class="w"> </span>eth0
+<span class="c1"># look for &quot;link/ether xx:xx:xx:xx:xx:xx&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-4-install-and-configure-usb-ip">
+<h2>Step 4: Install and Configure USB/IP<a class="headerlink" href="#step-4-install-and-configure-usb-ip" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p>Load the kernel modules and configure them to load at boot:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>modprobe<span class="w"> </span>usbip_core
+sudo<span class="w"> </span>modprobe<span class="w"> </span>usbip_host
+<span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;usbip-core\nusbip-host&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/modules-load.d/usbip.conf
+</pre></div>
+</div>
+</li>
+<li><p>Install the <code class="docutils literal notranslate"><span class="pre">usbip</span></code> package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>usbip
+</pre></div>
+</div>
+</li>
+<li><p>Create a systemd service for <code class="docutils literal notranslate"><span class="pre">usbipd</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;[Unit]</span>
+<span class="s2">Description=USB/IP Daemon</span>
+<span class="s2">After=network.target</span>
+
+<span class="s2">[Service]</span>
+<span class="s2">Type=forking</span>
+<span class="s2">ExecStart=/usr/sbin/usbipd -D</span>
+<span class="s2">Restart=on-failure</span>
+
+<span class="s2">[Install]</span>
+<span class="s2">WantedBy=multi-user.target&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/systemd/system/usbipd.service
+
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>usbipd.service
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-5-install-the-agent">
+<h2>Step 5: Install the Agent<a class="headerlink" href="#step-5-install-the-agent" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-fsSLO<span class="w"> </span>https://raw.githubusercontent.com/DiamondLightSource/dra-usbip-driver/main/scripts/install-agent.sh
+sudo<span class="w"> </span>bash<span class="w"> </span>install-agent.sh
+</pre></div>
+</div>
+<p>Verify:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>dra-usbip-agent
+curl<span class="w"> </span>http://localhost:13240/devices
+</pre></div>
+</div>
+</section>
+<section id="step-6-install-the-pico-mac-sender-optional">
+<h2>Step 6: Install the Pico MAC Sender (optional)<a class="headerlink" href="#step-6-install-the-pico-mac-sender-optional" title="Link to this heading">#</a></h2>
+<p>This service monitors USB ports for a Raspberry Pi Pico and sends the
+Pi’s MAC address to its OLED display. Useful for commissioning without a
+monitor or keyboard.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-fsSLO<span class="w"> </span>https://raw.githubusercontent.com/DiamondLightSource/dra-usbip-driver/main/scripts/install-pico-mac-sender.sh
+sudo<span class="w"> </span>bash<span class="w"> </span>install-pico-mac-sender.sh
+</pre></div>
+</div>
+</section>
+<section id="step-7-install-image-backup">
+<h2>Step 7: Install image-backup<a class="headerlink" href="#step-7-install-image-backup" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">image-backup</span></code> creates compressed backup images of Raspberry Pi SD cards
+that auto-expand on first boot. See
+<a class="reference external" href="https://forums.raspberrypi.com/viewtopic.php?t=332000">https://forums.raspberrypi.com/viewtopic.php?t=332000</a> for details.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/seamusdemora/RonR-RPi-image-utils.git
+sudo<span class="w"> </span>install<span class="w"> </span>--mode<span class="o">=</span><span class="m">755</span><span class="w"> </span>~/RonR-RPi-image-utils/image-*<span class="w"> </span>/usr/local/sbin
+</pre></div>
+</div>
+</section>
+<section id="step-8-clean-up-settings-for-production">
+<h2>Step 8: Clean Up Settings for Production<a class="headerlink" href="#step-8-clean-up-settings-for-production" title="Link to this heading">#</a></h2>
+<p>Undo any temporary configuration so the image can be reused on multiple
+Pis with DHCP.</p>
+<ol class="arabic">
+<li><p>Disable the static IP if you set one:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>vim<span class="w"> </span>/boot/firmware/cmdline.txt
+<span class="c1"># remove &quot; ip=&lt;your_static_ip_address&gt;&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Disable WiFi if you enabled it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>vim<span class="w"> </span>/boot/firmware/config.txt
+<span class="c1"># add at the end:</span>
+<span class="nv">dtoverlay</span><span class="o">=</span>disable-wifi
+<span class="nv">dtoverlay</span><span class="o">=</span>disable-bt
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-9-prepare-the-backup-image-for-distribution">
+<h2>Step 9: Prepare the Backup Image for Distribution<a class="headerlink" href="#step-9-prepare-the-backup-image-for-distribution" title="Link to this heading">#</a></h2>
+<p>Set up a run-once service so copies of the image enable read-only mode
+on first boot:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;[Unit]</span>
+<span class="s1">Description=Run script once on next boot</span>
+<span class="s1">ConditionPathExists=/var/local/runonce.sh</span>
+<span class="s1">After=multi-user.target</span>
+
+<span class="s1">[Service]</span>
+<span class="s1">Type=oneshot</span>
+<span class="s1">ExecStart=/bin/bash /var/local/runonce.sh</span>
+
+<span class="s1">[Install]</span>
+<span class="s1">WantedBy=multi-user.target</span>
+<span class="s1">&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/systemd/system/runonce.service
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>runonce.service
+</pre></div>
+</div>
+<p>Create the <code class="docutils literal notranslate"><span class="pre">runonce.sh</span></code> script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;#!/bin/bash</span>
+<span class="s1">set -x</span>
+
+<span class="s1"># Disable this script from running again</span>
+<span class="s1">mv /var/local/runonce.sh /var/local/runonce.sh.done</span>
+
+<span class="s1"># disable services that will report errors when in RO mode</span>
+<span class="s1">systemctl mask dphys-swapfile.service</span>
+<span class="s1">systemctl mask systemd-zram-setup@zram0.service</span>
+
+<span class="s1"># enable read only overlay mode</span>
+<span class="s1">raspi-config nonint do_overlayfs 0</span>
+
+<span class="s1"># reboot to pick up the change</span>
+<span class="s1">sync; reboot</span>
+<span class="s1">&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/var/local/runonce.sh
+
+<span class="c1"># Add packages required for read-only mode</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>cryptsetup<span class="w"> </span>cryptsetup-bin<span class="w"> </span>overlayroot
+</pre></div>
+</div>
+</section>
+<section id="step-10-create-a-backup-image-of-the-microsd-card">
+<span id="create-a-backup-image"></span><h2>Step 10: Create a Backup Image of the microSD Card<a class="headerlink" href="#step-10-create-a-backup-image-of-the-microsd-card" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p>Insert a USB stick into the Raspberry Pi.</p></li>
+<li><p>Mount the USB stick:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/media/local/usb
+sudo<span class="w"> </span>mount<span class="w"> </span>/dev/sda1<span class="w"> </span>/media/local/usb
+</pre></div>
+</div>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">image-backup</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>image-backup
+<span class="c1"># when prompted for output file, use something like:</span>
+/media/local/usb/raspi-agent-server-0.3.0.img
+</pre></div>
+</div>
+</li>
+<li><p>Sync and unmount:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sync
+sudo<span class="w"> </span>umount<span class="w"> </span>/media/local/usb
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Your image can now be used to commission additional Raspberry Pi agent
+servers as described in <a class="reference internal" href="../tutorials/commission-raspi.html"><span class="doc">Commissioning a new Raspberry Pi as an Agent Server</span></a>.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="deploy.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Install the manager and plugin on Kubernetes</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="update-raspi-image.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Updating an Existing Raspberry Pi Boot Image</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-image-the-microsd-card-with-raspberry-pi-os">Step 1: Image the microSD Card with Raspberry Pi OS</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-configure-the-raspberry-pi-os-image">Step 2: Configure the Raspberry Pi OS Image</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-first-boot-and-connect-to-internet">Step 3: First Boot and Connect to Internet</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-install-and-configure-usb-ip">Step 4: Install and Configure USB/IP</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-5-install-the-agent">Step 5: Install the Agent</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-6-install-the-pico-mac-sender-optional">Step 6: Install the Pico MAC Sender (optional)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-7-install-image-backup">Step 7: Install image-backup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-8-clean-up-settings-for-production">Step 8: Clean Up Settings for Production</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-9-prepare-the-backup-image-for-distribution">Step 9: Prepare the Backup Image for Distribution</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-10-create-a-backup-image-of-the-microsd-card">Step 10: Create a Backup Image of the microSD Card</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/dra-usbip-driver/edit/1.0.0/docs/how-to/new-raspi-image.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/how-to/new-raspi-image.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
