@@ -58,7 +58,8 @@ For more detail see {doc}`/how-to/deploy`.
 ## 3. Request a USB device in a pod
 
 Create a `ResourceClaimTemplate` to match a specific USB device, then
-reference it from a pod:
+reference it from a pod. The `usbip` `DeviceClass` is created by the Helm
+chart, so you only need the claim template and pod:
 
 ```yaml
 apiVersion: resource.k8s.io/v1
@@ -89,6 +90,9 @@ spec:
     - name: app
       image: ubuntu
       command: ["sleep", "infinity"]
+      resources:
+        claims:
+          - name: usb-claim
   resourceClaims:
     - name: usb-claim
       resourceClaimTemplateName: serial-adapter

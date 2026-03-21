@@ -8,5 +8,6 @@ how-to/deploy
 how-to/run-ci-locally
 how-to/run-sphinx
 how-to/use-devcontainer
+how-to/troubleshoot
 how-to/contribute
 ```
