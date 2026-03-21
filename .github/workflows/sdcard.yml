@@ -25,13 +25,7 @@ jobs:
         with:
           image-name: raspi-agent-server-${{ inputs.agent-version }}
           stage-list: stage0 stage1 stage2 ./pi-gen-stage
-          # Use our fork which fixes the Dockerfile to include
-          # qemu-user-binfmt (missing in upstream arm64 branch).
-          pi-gen-repository: DiamondLightSource/pi-gen
           pi-gen-version: arm64
-          # Install QEMU after disk cleanup (setup-qemu-action runs
-          # too early and gets removed by increase-runner-disk-size)
-          extra-host-dependencies: qemu-user-static
           hostname: raspberrypi
           username: local
           password: local
