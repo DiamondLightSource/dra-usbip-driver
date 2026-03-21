@@ -15,9 +15,12 @@ card is suitable.
 
 ## Step 2: Flash the Agent Server Image
 
-<!-- TODO: host a pre-built image and add download link here -->
-
-1. Download the pre-built agent server image.
+1. Download the latest `raspi-agent-server-*.img.xz` from the
+   [GitHub Releases](https://github.com/DiamondLightSource/dra-usbip-driver/releases)
+   page and decompress it:
+    ```bash
+    unxz raspi-agent-server-*.img.xz
+    ```
 
 1. Insert a microSD card of at least 16GB capacity into a card reader
    connected to your computer.

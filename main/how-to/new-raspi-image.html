@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Create a New Raspberry Pi Boot Image From Scratch &#8212; dra-usbip-driver 0.2.1-9-ga265bed documentation</title>
+    <title>Create a New Raspberry Pi Boot Image From Scratch &#8212; dra-usbip-driver 0.2.1-10-g45cce89 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=623a7eac"></script>
+    <script src="../_static/documentation_options.js?v=c8332254"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -449,6 +449,15 @@
 pre-built image. See <a class="reference internal" href="../tutorials/commission-raspi.html"><span class="doc">Commissioning a new Raspberry Pi as an Agent Server</span></a>.</p>
 <p>This page is only needed if you want to create a completely new SD card
 image, perhaps because a new version of Raspberry Pi OS has been released.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Images can also be built automatically using the <strong>Build SD Card Image</strong>
+GitHub Actions workflow. The resulting image will be attached to the
+corresponding <a class="reference external" href="https://github.com/DiamondLightSource/dra-usbip-driver/releases">GitHub Release</a>.</p>
+<p>To trigger the build, go to <strong>Actions → Build SD Card Image → Run
+workflow</strong>, enter the release tag (e.g. <code class="docutils literal notranslate"><span class="pre">v0.3.0</span></code>), and click <strong>Run
+workflow</strong>.</p>
+</div>
 <p>If you just want to update the agent version on an existing image, see
 <a class="reference internal" href="update-raspi-image.html"><span class="doc">Updating an Existing Raspberry Pi Boot Image</span></a>.</p>
 </section>
