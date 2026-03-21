@@ -34,6 +34,8 @@ spec:
           image: "{{ .Values.plugin.image.repository }}:{{ .Values.plugin.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.plugin.image.pullPolicy }}
           command: ["/plugin"]
+          securityContext:
+            privileged: true
           env:
             - name: NODE_NAME
               valueFrom:
