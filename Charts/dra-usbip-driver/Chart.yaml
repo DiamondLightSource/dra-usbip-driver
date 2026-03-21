@@ -1,24 +1,11 @@
 apiVersion: v2
 name: dra-usbip-driver
-description: A Helm chart for Kubernetes
+description: >-
+  Installs the DRA USB/IP driver, which allows sharing USB devices that are exposed by the DRA USB/IP Agent.
+  The driver consists of two components: a manager that runs as a Deployment and a plugin that runs as a DaemonSet.
+  The manager polls the agents for USB device information and creates ResourceSlice objects in the cluster.
 
-# A chart can be either an 'application' or a 'library' chart.
-#
-# Application charts are a collection of templates that can be packaged into versioned archives
-# to be deployed.
-#
-# Library charts provide useful utilities or functions for the chart developer. They're included as
-# a dependency of application charts to inject those utilities and functions into the rendering
-# pipeline. Library charts do not define any templates and therefore cannot be deployed.
 type: application
-
-# This is the chart version. This version number should be incremented each time you make changes
-# to the chart and its templates, including the app version.
-# Versions are expected to follow Semantic Versioning (https://semver.org/)
 version: 0.1.1
-
-# This is the version number of the application being deployed. This version number should be
-# incremented each time you make changes to the application. Versions are not expected to
-# follow Semantic Versioning. They should reflect the version the application is using.
-# It is recommended to use it with quotes.
-appVersion: "0.1.1-beta.1"
+# NOTE: the CI replaces appVersion with the current git tag.
+appVersion: "0.1.1"
