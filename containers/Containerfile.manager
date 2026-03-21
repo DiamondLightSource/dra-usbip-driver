@@ -8,7 +8,8 @@ RUN go mod download
 COPY cmd/ cmd/
 COPY pkg/ pkg/
 
-RUN CGO_ENABLED=0 go build -o manager ./cmd/manager/
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOARCH=${TARGETARCH} go build -o manager ./cmd/manager/
 
 
 FROM gcr.io/distroless/static-debian13
