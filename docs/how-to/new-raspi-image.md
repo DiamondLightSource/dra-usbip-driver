@@ -10,10 +10,18 @@ image, perhaps because a new version of Raspberry Pi OS has been released.
 
 :::{tip}
 Images can also be built automatically using the **Build SD Card Image**
-GitHub Actions workflow. Go to **Actions → Build SD Card Image → Run
-workflow** and provide the release tag (e.g. `v0.3.0`). The resulting
-image will be attached to the corresponding
-[GitHub Release](https://github.com/DiamondLightSource/dra-usbip-driver/releases).
+GitHub Actions workflow. The resulting image will be attached to the
+corresponding [GitHub Release](https://github.com/DiamondLightSource/dra-usbip-driver/releases).
+
+To trigger the build from the GitHub UI, go to **Actions → Build SD Card
+Image → Run workflow**, enter the release tag (e.g. `v0.3.0`), and click
+**Run workflow**.
+
+Alternatively, use the GitHub CLI:
+
+```bash
+gh workflow run sdcard.yml -f agent-version=v0.3.0
+```
 :::
 
 If you just want to update the agent version on an existing image, see
