@@ -1,0 +1,17 @@
+# project definition for sphinx documentation builder
+
+[project]
+name = "dra-usbip-driver"
+version = "0.0.0"
+description = "DRA USB/IP driver"
+requires-python = ">=3.12"
+
+[dependency-groups]
+docs = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "sphinx-autobuild",
+]

@@ -1,14 +1,16 @@
 {
     "name": "Go Developer Container",
-    "image": "mcr.microsoft.com/devcontainers/go:1.24",
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "build": {
+        "context": "..",
+        "dockerfile": "Dockerfile"
     },
     "customizations": {
         "vscode": {
             "settings": {
                 "go.lintTool": "golangci-lint",
-                "go.lintFlags": ["--fast"]
+                "go.lintFlags": [
+                    "--fast"
+                ]
             },
             "extensions": [
                 "golang.go",
@@ -18,5 +20,10 @@
             ]
         }
     },
-    "postCreateCommand": "go mod download && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+    "postCreateCommand": "go mod download && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && uv sync --group docs",
+    "remoteEnv": {
+        "PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
+    },
+    // Mount the parent as /workspaces so we can pip install peers as editable
+    "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
 }
