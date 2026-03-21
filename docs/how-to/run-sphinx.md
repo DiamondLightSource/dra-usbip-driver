@@ -1,6 +1,8 @@
 # Run Sphinx
 
-This guide explains how to build and preview the project documentation locally using Sphinx.
+This guide explains how to build and preview the project documentation locally
+using Sphinx. Makefile targets are provided so you don't need to remember the
+full commands.
 
 ## Prerequisites
 
@@ -17,24 +19,20 @@ $ uv sync --group docs
 
 ## Build the documentation
 
-Run a one-off build into `docs/_build/html`:
+Run a one-off build (warnings are treated as errors, matching CI):
 
 ```bash
-$ uv run sphinx-build docs docs/_build/html
+$ make docs
 ```
 
-To treat warnings as errors (as CI does):
-
-```bash
-$ uv run sphinx-build -W --keep-going docs docs/_build/html
-```
+The output is written to `docs/_build/html`.
 
 ## Live preview
 
 For a live-reloading server that rebuilds on changes:
 
 ```bash
-$ uv run sphinx-autobuild docs docs/_build/html
+$ make docs-live
 ```
 
 Then open the URL shown in the terminal (typically `http://127.0.0.1:8000`).
