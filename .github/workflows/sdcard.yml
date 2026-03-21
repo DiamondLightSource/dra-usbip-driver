@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       agent-version:
-        description: "Release tag to install (e.g. v0.3.0)"
+        description: "Release tag to install (e.g. 0.3.0)"
         required: true
         type: string
 
@@ -19,47 +19,148 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone and configure pi-gen
+      - name: Download Raspberry Pi OS Lite
         run: |
-          git clone --depth 1 -b arm64 https://github.com/RPi-Distro/pi-gen.git pi-gen
+          # Download latest arm64 lite image
+          curl -fSL -o raspi.img.xz \
+            https://downloads.raspberrypi.com/raspios_lite_arm64_latest
+          unxz raspi.img.xz
 
-          # Copy our custom stage into pi-gen
-          cp -r pi-gen-stage pi-gen/
-
-          # Write pi-gen config
-          cat > pi-gen/config <<EOF
-          IMG_NAME=raspi-agent-server-${{ inputs.agent-version }}
-          RELEASE=trixie
-          DEPLOY_COMPRESSION=xz
-          COMPRESSION_LEVEL=6
-          LOCALE_DEFAULT=en_GB.UTF-8
-          TARGET_HOSTNAME=raspberrypi
-          KEYBOARD_KEYMAP=gb
-          KEYBOARD_LAYOUT="English (UK)"
-          TIMEZONE_DEFAULT=Europe/London
-          FIRST_USER_NAME=local
-          FIRST_USER_PASS=local
-          DISABLE_FIRST_BOOT_USER_RENAME=0
-          ENABLE_SSH=1
-          STAGE_LIST="stage0 stage1 stage2 ./pi-gen-stage"
-          EOF
-
-          # Skip image export for all stages except the last
-          touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
-          touch pi-gen/pi-gen-stage/EXPORT_IMAGE
-
-          # Write version file for chroot scripts to read
-          echo "${{ inputs.agent-version }}" > pi-gen/pi-gen-stage/AGENT_VERSION
-
-      - name: Build Pi image
+      - name: Customise image
         run: |
-          cd pi-gen
-          sudo ./build-docker.sh
+          # Expand image to fit additional packages
+          truncate -s +500M raspi.img
+
+          # Set up loop device
+          LOOP=$(sudo losetup -fP --show raspi.img)
+          echo "LOOP=$LOOP" >> "$GITHUB_ENV"
+
+          # Grow the root partition to fill the extra space
+          sudo parted -s "$LOOP" resizepart 2 100%
+          sudo e2fsck -fy "${LOOP}p2" || true
+          sudo resize2fs "${LOOP}p2"
+
+          # Mount root and boot
+          sudo mount "${LOOP}p2" /mnt
+          sudo mount "${LOOP}p1" /mnt/boot/firmware
+
+          # Set up DNS for chroot
+          sudo cp /etc/resolv.conf /mnt/etc/resolv.conf
+
+          # Configure first-boot user (local/local)
+          echo "local:$(echo local | openssl passwd -6 -stdin)" | \
+            sudo tee /mnt/boot/firmware/userconf.txt
+
+          # Enable SSH
+          sudo touch /mnt/boot/firmware/ssh
+
+          # Install packages and services in chroot
+          sudo chroot /mnt bash -e <<'CHROOT'
+          export DEBIAN_FRONTEND=noninteractive
+
+          # Install USB/IP
+          apt-get update
+          apt-get install -y usbip
+          apt-get clean
+
+          # Configure USB/IP kernel modules
+          cat > /etc/modules-load.d/usbip.conf <<MOD
+          usbip-core
+          usbip-host
+          MOD
+
+          # Create usbipd service
+          cat > /etc/systemd/system/usbipd.service <<SVC
+          [Unit]
+          Description=USB/IP Daemon
+          After=network.target
+
+          [Service]
+          Type=forking
+          ExecStart=/usr/sbin/usbipd -D
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          systemctl enable usbipd.service
+          CHROOT
+
+          # Install agent binary (outside chroot, using curl on host)
+          AGENT_VERSION="${{ inputs.agent-version }}"
+          REPO="DiamondLightSource/dra-usbip-driver"
+          sudo curl -fsSL -o /mnt/usr/local/bin/agent \
+            "https://github.com/${REPO}/releases/download/${AGENT_VERSION}/agent-linux-arm64"
+          sudo chmod +x /mnt/usr/local/bin/agent
+
+          # Create agent service
+          sudo tee /mnt/etc/systemd/system/dra-usbip-agent.service <<SVC
+          [Unit]
+          Description=DRA USB/IP Agent
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/agent
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          sudo chroot /mnt systemctl enable dra-usbip-agent
+
+          # Install pico-mac-sender binary
+          sudo curl -fsSL -o /mnt/usr/local/bin/pico-mac-sender \
+            "https://github.com/${REPO}/releases/download/${AGENT_VERSION}/pico-mac-sender-linux-arm64"
+          sudo chmod +x /mnt/usr/local/bin/pico-mac-sender
+
+          # Create pico-mac-sender service
+          sudo tee /mnt/etc/systemd/system/pico-mac-sender.service <<SVC
+          [Unit]
+          Description=Send MAC address to Raspberry Pi Pico OLED display
+          After=multi-user.target
+
+          [Service]
+          ExecStart=/usr/local/bin/pico-mac-sender
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          sudo chroot /mnt systemctl enable pico-mac-sender
+
+          # Disable WiFi and Bluetooth
+          sudo tee -a /mnt/boot/firmware/config.txt <<CFG
+
+          dtoverlay=disable-wifi
+          dtoverlay=disable-bt
+          CFG
+
+          # Clean up
+          sudo rm /mnt/etc/resolv.conf
+
+      - name: Unmount and compress
+        if: always()
+        run: |
+          sudo umount /mnt/boot/firmware || true
+          sudo umount /mnt || true
+          sudo losetup -d "$LOOP" || true
+
+      - name: Shrink and compress image
+        run: |
+          # Shrink the image using pishrink if available, otherwise just compress
+          curl -fsSL -o pishrink.sh https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh
+          chmod +x pishrink.sh
+          sudo ./pishrink.sh raspi.img || true
+
+          mv raspi.img raspi-agent-server-${{ inputs.agent-version }}.img
+          xz -6 raspi-agent-server-${{ inputs.agent-version }}.img
 
       - name: Attach image to release
         uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
         with:
           tag_name: ${{ inputs.agent-version }}
-          files: pi-gen/deploy/*.xz
+          files: raspi-agent-server-${{ inputs.agent-version }}.img.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
