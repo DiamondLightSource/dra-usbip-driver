@@ -36,8 +36,7 @@ jobs:
           compression-level: 6
           export-last-stage-only: true
           increase-runner-disk-size: true
-        env:
-          AGENT_VERSION: ${{ inputs.agent-version }}
+          docker-opts: -e GIT_HASH=${{ github.sha }} -e AGENT_VERSION=${{ inputs.agent-version }}
 
       - name: Attach image to release
         uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1

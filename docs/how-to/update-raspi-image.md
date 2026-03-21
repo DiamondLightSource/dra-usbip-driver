@@ -3,6 +3,13 @@
 To upgrade the agent or other software on an existing Raspberry Pi image,
 follow these steps.
 
+:::{tip}
+If you just need a new image with an updated agent version, you can build
+one automatically using the **Build SD Card Image** GitHub Actions
+workflow instead of following the manual steps below. See the tip in
+{doc}`new-raspi-image` for details.
+:::
+
 1. Boot a Raspberry Pi using the existing microSD card image. Make sure
    you have network connectivity so you can SSH in.
 
