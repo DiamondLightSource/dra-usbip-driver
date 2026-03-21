@@ -207,7 +207,7 @@ jobs:
           sudo ./pishrink.sh raspi.img || true
 
           mv raspi.img raspi-agent-server-${{ inputs.agent-version }}.img
-          xz -6 raspi-agent-server-${{ inputs.agent-version }}.img
+          xz -3 raspi-agent-server-${{ inputs.agent-version }}.img
 
       - name: Attach image to release
         uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
