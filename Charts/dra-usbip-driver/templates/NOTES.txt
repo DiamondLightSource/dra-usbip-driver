@@ -1,0 +1,13 @@
+dra-usbip-driver has been installed.
+
+Manager: {{ include "dra-usbip-driver.fullname" . }}-manager (Deployment)
+Plugin:  {{ include "dra-usbip-driver.fullname" . }}-plugin (DaemonSet)
+
+{{- if .Values.manager.agents }}
+Configured agents:
+{{- range .Values.manager.agents }}
+  - {{ . }}
+{{- end }}
+{{- else }}
+WARNING: No agents configured. Set manager.agents to connect to USB/IP agents.
+{{- end }}

@@ -8,7 +8,11 @@ agent-%: clean-agent
 clean-agent:
 	rm -f agent
 
-.PHONY: lint test docs docs-live ci
+.PHONY: build lint test docs docs-live ci
+
+build:
+	go build ./cmd/manager
+	go build ./cmd/plugin
 
 lint:
 	golangci-lint run

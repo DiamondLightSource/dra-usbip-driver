@@ -28,8 +28,14 @@ golangci-lint run
 
 ## Building
 
+Build the manager and plugin:
+
 ```bash
-make agent
-go build ./cmd/manager
-go build ./cmd/plugin
+$ make build
+```
+
+The agent cross-compiles for the target architecture (e.g. Raspberry Pi):
+
+```bash
+$ make agent
 ```

@@ -1,0 +1,41 @@
+# Default values for dra-usbip-driver.
+
+# -- Manager runs as a single-replica Deployment, fetching device info from Agents
+# and creating ResourceSlice objects in the cluster.
+manager:
+  image:
+    repository: ghcr.io/diamondlightsource/dra-usbip-driver-manager
+    pullPolicy: IfNotPresent
+    # -- Overrides the image tag whose default is the chart appVersion
+    tag: ""
+  # -- List of agent addresses to poll for USB devices
+  agents: []
+  #   - 192.168.0.9
+  #   - 192.168.0.10
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# -- Plugin runs as a DaemonSet, handling Kubelet requests to attach/detach
+# USB/IP devices and mount them into pods.
+plugin:
+  image:
+    repository: ghcr.io/diamondlightsource/dra-usbip-driver-plugin
+    pullPolicy: IfNotPresent
+    # -- Overrides the image tag whose default is the chart appVersion
+    tag: ""
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Specifies whether service accounts should be created
+  create: true
+  # -- Annotations to add to the service accounts
+  annotations: {}

@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "dra-usbip-driver.fullname" . }}-plugin
+  labels:
+    {{- include "dra-usbip-driver.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "dra-usbip-driver.fullname" . }}-plugin
+subjects:
+- kind: ServiceAccount
+  name: {{ include "dra-usbip-driver.serviceAccountName" . }}-plugin
+  namespace: {{ .Release.Namespace }}
