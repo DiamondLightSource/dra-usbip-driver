@@ -137,6 +137,48 @@ jobs:
           dtoverlay=disable-bt
           CFG
 
+          # Install packages needed for read-only overlay mode
+          sudo chroot /mnt bash -e <<'CHROOT'
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get install -y cryptsetup cryptsetup-bin overlayroot
+          apt-get clean
+          CHROOT
+
+          # Create run-once service that enables read-only overlay on first boot
+          sudo tee /mnt/etc/systemd/system/runonce.service <<SVC
+          [Unit]
+          Description=Run script once on next boot
+          ConditionPathExists=/var/local/runonce.sh
+          After=multi-user.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/bash /var/local/runonce.sh
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          sudo chroot /mnt systemctl enable runonce.service
+
+          sudo tee /mnt/var/local/runonce.sh <<'SCRIPT'
+          #!/bin/bash
+          set -x
+
+          # Disable this script from running again
+          mv /var/local/runonce.sh /var/local/runonce.sh.done
+
+          # Disable services that report errors in RO mode
+          systemctl mask dphys-swapfile.service
+          systemctl mask systemd-zram-setup@zram0.service
+
+          # Enable read-only overlay mode
+          raspi-config nonint do_overlayfs 0
+
+          # Reboot to pick up the change
+          sync; reboot
+          SCRIPT
+          sudo chmod +x /mnt/var/local/runonce.sh
+
           # Clean up
           sudo rm /mnt/etc/resolv.conf
 
