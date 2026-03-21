@@ -32,30 +32,46 @@ jobs:
         with:
           platforms: arm64
 
+      - name: Clone and configure pi-gen
+        run: |
+          git clone --depth 1 -b arm64 https://github.com/RPi-Distro/pi-gen.git pi-gen
+
+          # Copy our custom stage into pi-gen
+          cp -r pi-gen-stage pi-gen/
+
+          # Write pi-gen config
+          cat > pi-gen/config <<EOF
+          IMG_NAME=raspi-agent-server-${{ inputs.agent-version }}
+          RELEASE=trixie
+          DEPLOY_COMPRESSION=xz
+          COMPRESSION_LEVEL=6
+          LOCALE_DEFAULT=en_GB.UTF-8
+          TARGET_HOSTNAME=raspberrypi
+          KEYBOARD_KEYMAP=gb
+          KEYBOARD_LAYOUT="English (UK)"
+          TIMEZONE_DEFAULT=Europe/London
+          FIRST_USER_NAME=local
+          FIRST_USER_PASS=local
+          DISABLE_FIRST_BOOT_USER_RENAME=0
+          ENABLE_SSH=1
+          STAGE_LIST="stage0 stage1 stage2 ./pi-gen-stage"
+          EOF
+
+          # Skip image export for all stages except the last
+          touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
+          touch pi-gen/pi-gen-stage/EXPORT_IMAGE
+
       - name: Build Pi image
-        id: build
-        uses: usimd/pi-gen-action@v1
-        with:
-          image-name: raspi-agent-server-${{ inputs.agent-version }}
-          stage-list: stage0 stage1 stage2 ./pi-gen-stage
-          pi-gen-version: arm64
-          hostname: raspberrypi
-          username: local
-          password: local
-          locale: en_GB.UTF-8
-          timezone: Europe/London
-          enable-ssh: 1
-          enable-cloud-init: 0
-          compression: xz
-          compression-level: 6
-          export-last-stage-only: false
-          verbose-output: true
-          docker-opts: -e AGENT_VERSION=${{ inputs.agent-version }}
+        run: |
+          cd pi-gen
+          sudo AGENT_VERSION=${{ inputs.agent-version }} ./build-docker.sh
+        env:
+          PIGEN_DOCKER_OPTS: -e AGENT_VERSION=${{ inputs.agent-version }}
 
       - name: Attach image to release
         uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
         with:
           tag_name: ${{ inputs.agent-version }}
-          files: ${{ steps.build.outputs.image-path }}
+          files: pi-gen/deploy/*.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
