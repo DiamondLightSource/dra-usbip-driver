@@ -13,29 +13,11 @@ permissions:
 
 jobs:
   build-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Free up disk space
-        run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost
-          sudo apt-get -qq purge -y 'dotnet-*' 'aspnet*' 'mono-*' google-chrome-stable firefox 2>/dev/null || true
-          sudo apt-get -qq autoremove -y 2>/dev/null || true
-          sudo docker system prune --all --force --volumes 2>/dev/null || true
-          df -h /
-
-      - name: Set up QEMU for arm64 emulation
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y qemu-user-static binfmt-support
-          # Ensure qemu-aarch64 exists (build-docker.sh looks for it
-          # by this name, but the package installs qemu-aarch64-static)
-          sudo ln -sf /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64
-          # Verify
-          qemu-aarch64 --version
 
       - name: Clone and configure pi-gen
         run: |
