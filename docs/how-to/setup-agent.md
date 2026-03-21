@@ -45,13 +45,13 @@ installs it to `/usr/local/bin/agent`, and creates a systemd service:
 
 ```bash
 $ curl -fsSLO https://raw.githubusercontent.com/DiamondLightSource/dra-usbip-driver/main/scripts/install-agent.sh
-$ sudo sh install-agent.sh
+$ sudo bash install-agent.sh
 ```
 
 To install a specific version:
 
 ```bash
-$ sudo sh install-agent.sh 0.1.0
+$ sudo bash install-agent.sh 0.1.0
 ```
 
 ## Verify

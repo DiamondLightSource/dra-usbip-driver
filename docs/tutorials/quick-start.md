@@ -19,7 +19,7 @@ On the machine with USB devices attached, run the install script:
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/DiamondLightSource/dra-usbip-driver/main/scripts/install-agent.sh
-sudo sh install-agent.sh 0.1.0
+sudo bash install-agent.sh 0.1.0
 ```
 
 This downloads the correct binary for your architecture, installs it as a
