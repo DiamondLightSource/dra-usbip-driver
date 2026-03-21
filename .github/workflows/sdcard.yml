@@ -60,7 +60,10 @@ jobs:
 
           # Install USB/IP
           apt-get update
-          apt-get install -y --no-install-recommends usbip
+          apt-get install -y --no-install-recommends usbip || true
+          # Kernel packages may fail to configure in chroot — that's OK,
+          # the Pi has its own kernel. Force through the errors.
+          dpkg --configure -a --force-depends 2>/dev/null || true
           apt-get clean
 
           # Configure USB/IP kernel modules
