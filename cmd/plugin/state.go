@@ -68,7 +68,7 @@ func NewDeviceState(driverName string) (*DeviceState, error) {
 
 	checkpointManager, err := checkpointmanager.NewCheckpointManager("/var/lib/kubelet/plugins/usbip")
 	if err != nil {
-		return nil, fmt.Errorf("unable to create checkpoint manager: %v")
+		return nil, fmt.Errorf("unable to create checkpoint manager: %v", err)
 	}
 
 	state := &DeviceState{

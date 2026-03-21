@@ -9,6 +9,7 @@ coverage.out
 
 # Build artifacts
 build/
+_build/
 
 # IDE
 .idea/
