@@ -5,6 +5,11 @@ that provides a ready-to-use development environment.
 
 ## What is included
 
+The devcontainer is designed for use with **Podman** or other rootless container
+runtimes. It runs as `root` inside the container, which is the standard approach
+when the container runtime itself is unprivileged (rootless). This avoids
+permission issues with mounted volumes and build tools.
+
 The devcontainer is based on the Microsoft Go 1.24 image and comes with:
 
 - **Go 1.24** and **golangci-lint** for building and linting the project
