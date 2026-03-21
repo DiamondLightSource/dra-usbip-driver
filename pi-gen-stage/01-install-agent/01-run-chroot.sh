@@ -7,8 +7,9 @@ SERVICE_NAME="dra-usbip-agent"
 BINARY_NAME="agent"
 GOARCH="arm64"
 
-if [ -z "${AGENT_VERSION:-}" ]; then
-  echo "Error: AGENT_VERSION must be set" >&2
+AGENT_VERSION="${AGENT_VERSION:-$(cat /tmp/AGENT_VERSION 2>/dev/null || true)}"
+if [ -z "${AGENT_VERSION}" ]; then
+  echo "Error: AGENT_VERSION must be set or /tmp/AGENT_VERSION must exist" >&2
   exit 1
 fi
 

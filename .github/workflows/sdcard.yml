@@ -48,12 +48,13 @@ jobs:
           touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
           touch pi-gen/pi-gen-stage/EXPORT_IMAGE
 
+          # Write version file for chroot scripts to read
+          echo "${{ inputs.agent-version }}" > pi-gen/pi-gen-stage/AGENT_VERSION
+
       - name: Build Pi image
         run: |
           cd pi-gen
-          sudo AGENT_VERSION=${{ inputs.agent-version }} ./build-docker.sh
-        env:
-          PIGEN_DOCKER_OPTS: -e AGENT_VERSION=${{ inputs.agent-version }}
+          sudo ./build-docker.sh
 
       - name: Attach image to release
         uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
