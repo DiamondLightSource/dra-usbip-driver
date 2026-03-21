@@ -4,4 +4,5 @@
 :maxdepth: 1
 
 reference/cli
+reference/recommended-hardware
 ```

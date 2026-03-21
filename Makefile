@@ -8,11 +8,22 @@ agent-%: clean-agent
 clean-agent:
 	rm -f agent
 
+.PHONY: pico-mac-sender
+pico-mac-sender:
+	@$(MAKE) pico-mac-sender-$(shell go env GOARCH)
+
+pico-mac-sender-%: clean-pico-mac-sender
+	CGO_ENABLED=0 GOARCH=$* go build -o pico-mac-sender ./cmd/pico-mac-sender
+
+clean-pico-mac-sender:
+	rm -f pico-mac-sender
+
 .PHONY: build lint test docs docs-live ci
 
 build:
 	go build ./cmd/manager
 	go build ./cmd/plugin
+	go build ./cmd/pico-mac-sender
 
 lint:
 	golangci-lint run
