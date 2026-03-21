@@ -4,7 +4,7 @@
 # and creating ResourceSlice objects in the cluster.
 manager:
   image:
-    repository: ghcr.io/diamondlightsource/dra-usbip-driver/manager
+    repository: ghcr.io/diamondlightsource/dra-usbip-driver-manager
     pullPolicy: IfNotPresent
     # -- Overrides the image tag whose default is the chart appVersion
     tag: ""
@@ -21,7 +21,7 @@ manager:
 # USB/IP devices and mount them into pods.
 plugin:
   image:
-    repository: ghcr.io/diamondlightsource/dra-usbip-driver/plugin
+    repository: ghcr.io/diamondlightsource/dra-usbip-driver-plugin
     pullPolicy: IfNotPresent
     # -- Overrides the image tag whose default is the chart appVersion
     tag: ""
