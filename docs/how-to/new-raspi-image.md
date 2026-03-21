@@ -8,6 +8,14 @@ pre-built image. See {doc}`/tutorials/commission-raspi`.
 This page is only needed if you want to create a completely new SD card
 image, perhaps because a new version of Raspberry Pi OS has been released.
 
+:::{tip}
+Images can also be built automatically using the **Build SD Card Image**
+GitHub Actions workflow. Go to **Actions → Build SD Card Image → Run
+workflow** and provide the release tag (e.g. `v0.3.0`). The resulting
+image will be attached to the corresponding
+[GitHub Release](https://github.com/DiamondLightSource/dra-usbip-driver/releases).
+:::
+
 If you just want to update the agent version on an existing image, see
 {doc}`update-raspi-image`.
 

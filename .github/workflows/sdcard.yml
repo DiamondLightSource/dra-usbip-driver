@@ -1,0 +1,48 @@
+name: Build SD Card Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent-version:
+        description: "Release tag to install (e.g. v0.3.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Pi image
+        id: build
+        uses: usimd/pi-gen-action@v1
+        with:
+          image-name: raspi-agent-server-${{ inputs.agent-version }}
+          stage-list: stage0 stage1 stage2 ./pi-gen-stage
+          pi-gen-version: arm64
+          hostname: raspberrypi
+          username: local
+          password: local
+          locale: en_GB.UTF-8
+          timezone: Europe/London
+          enable-ssh: 1
+          compression: xz
+          compression-level: 6
+          export-last-stage-only: true
+          increase-runner-disk-size: true
+        env:
+          AGENT_VERSION: ${{ inputs.agent-version }}
+
+      - name: Attach image to release
+        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
+        with:
+          tag_name: ${{ inputs.agent-version }}
+          files: ${{ steps.build.outputs.image-path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
