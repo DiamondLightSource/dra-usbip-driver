@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       agent-version:
-        description: "Release tag to install (e.g. v0.3.0)"
+        description: "Release tag to install (e.g. 0.3.0)"
         required: true
         type: string
 
@@ -13,36 +13,206 @@ permissions:
 
 jobs:
   build-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Pi image
-        id: build
-        uses: usimd/pi-gen-action@v1
-        with:
-          image-name: raspi-agent-server-${{ inputs.agent-version }}
-          stage-list: stage0 stage1 stage2 ./pi-gen-stage
-          pi-gen-version: arm64
-          hostname: raspberrypi
-          username: local
-          password: local
-          locale: en_GB.UTF-8
-          timezone: Europe/London
-          enable-ssh: 1
-          compression: xz
-          compression-level: 6
-          export-last-stage-only: true
-          increase-runner-disk-size: true
-        env:
-          AGENT_VERSION: ${{ inputs.agent-version }}
+      - name: Download Raspberry Pi OS Lite
+        run: |
+          # Download latest arm64 lite image
+          curl -fSL -o raspi.img.xz \
+            https://downloads.raspberrypi.com/raspios_lite_arm64_latest
+          unxz raspi.img.xz
+
+      - name: Customise image
+        run: |
+          # Expand image to fit additional packages
+          truncate -s +500M raspi.img
+
+          # Set up loop device
+          LOOP=$(sudo losetup -fP --show raspi.img)
+          echo "LOOP=$LOOP" >> "$GITHUB_ENV"
+
+          # Grow the root partition to fill the extra space
+          sudo parted -s "$LOOP" resizepart 2 100%
+          sudo e2fsck -fy "${LOOP}p2" || true
+          sudo resize2fs "${LOOP}p2"
+
+          # Mount root and boot
+          sudo mount "${LOOP}p2" /mnt
+          sudo mount "${LOOP}p1" /mnt/boot/firmware
+
+          # Set up virtual filesystems and DNS for chroot
+          sudo mount -t proc proc /mnt/proc
+          sudo mount -t sysfs sys /mnt/sys
+          sudo mount --bind /dev /mnt/dev
+          sudo mount --bind /dev/pts /mnt/dev/pts
+          sudo cp /etc/resolv.conf /mnt/etc/resolv.conf
+
+          # Configure first-boot user (local/local)
+          echo "local:$(echo local | openssl passwd -6 -stdin)" | \
+            sudo tee /mnt/boot/firmware/userconf.txt
+
+          # Enable SSH
+          sudo touch /mnt/boot/firmware/ssh
+
+          # Install packages and services in chroot
+          sudo chroot /mnt bash -e <<'CHROOT'
+          export DEBIAN_FRONTEND=noninteractive
+
+          # Install USB/IP
+          apt-get update
+          cd /tmp && apt-get download usbip
+          dpkg-deb -x usbip_*.deb /
+          rm usbip_*.deb
+          apt-get clean
+
+          # Configure USB/IP kernel modules
+          cat > /etc/modules-load.d/usbip.conf <<MOD
+          usbip-core
+          usbip-host
+          MOD
+
+          # Create usbipd service
+          cat > /etc/systemd/system/usbipd.service <<SVC
+          [Unit]
+          Description=USB/IP Daemon
+          After=network.target
+
+          [Service]
+          Type=forking
+          ExecStart=/usr/sbin/usbipd -D
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          systemctl enable usbipd.service
+          CHROOT
+
+          # Install agent binary (outside chroot, using curl on host)
+          AGENT_VERSION="${{ inputs.agent-version }}"
+          REPO="DiamondLightSource/dra-usbip-driver"
+          sudo curl -fsSL -o /mnt/usr/local/bin/agent \
+            "https://github.com/${REPO}/releases/download/${AGENT_VERSION}/agent-linux-arm64"
+          sudo chmod +x /mnt/usr/local/bin/agent
+
+          # Create agent service
+          sudo tee /mnt/etc/systemd/system/dra-usbip-agent.service <<SVC
+          [Unit]
+          Description=DRA USB/IP Agent
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/agent
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          sudo chroot /mnt systemctl enable dra-usbip-agent
+
+          # Install pico-mac-sender binary
+          sudo curl -fsSL -o /mnt/usr/local/bin/pico-mac-sender \
+            "https://github.com/${REPO}/releases/download/${AGENT_VERSION}/pico-mac-sender-linux-arm64"
+          sudo chmod +x /mnt/usr/local/bin/pico-mac-sender
+
+          # Create pico-mac-sender service
+          sudo tee /mnt/etc/systemd/system/pico-mac-sender.service <<SVC
+          [Unit]
+          Description=Send MAC address to Raspberry Pi Pico OLED display
+          After=multi-user.target
+
+          [Service]
+          ExecStart=/usr/local/bin/pico-mac-sender
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          sudo chroot /mnt systemctl enable pico-mac-sender
+
+          # Disable WiFi and Bluetooth
+          sudo tee -a /mnt/boot/firmware/config.txt <<CFG
+
+          dtoverlay=disable-wifi
+          dtoverlay=disable-bt
+          CFG
+
+          # Install packages needed for read-only overlay mode
+          sudo chroot /mnt bash -e <<'CHROOT'
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get install -y cryptsetup cryptsetup-bin overlayroot
+          apt-get clean
+          CHROOT
+
+          # Create run-once service that enables read-only overlay on first boot
+          sudo tee /mnt/etc/systemd/system/runonce.service <<SVC
+          [Unit]
+          Description=Run script once on next boot
+          ConditionPathExists=/var/local/runonce.sh
+          After=multi-user.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/bash /var/local/runonce.sh
+
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          sudo chroot /mnt systemctl enable runonce.service
+
+          sudo tee /mnt/var/local/runonce.sh <<'SCRIPT'
+          #!/bin/bash
+          set -x
+
+          # Disable this script from running again
+          mv /var/local/runonce.sh /var/local/runonce.sh.done
+
+          # Disable services that report errors in RO mode
+          systemctl mask dphys-swapfile.service
+          systemctl mask systemd-zram-setup@zram0.service
+
+          # Enable read-only overlay mode
+          raspi-config nonint do_overlayfs 0
+
+          # Reboot to pick up the change
+          sync; reboot
+          SCRIPT
+          sudo chmod +x /mnt/var/local/runonce.sh
+
+          # Clean up
+          sudo rm /mnt/etc/resolv.conf
+
+      - name: Unmount
+        if: always()
+        run: |
+          sudo umount /mnt/dev/pts || true
+          sudo umount /mnt/dev || true
+          sudo umount /mnt/sys || true
+          sudo umount /mnt/proc || true
+          sudo umount /mnt/boot/firmware || true
+          sudo umount /mnt || true
+          sudo losetup -d "$LOOP" || true
+
+      - name: Shrink and compress image
+        run: |
+          # Shrink the image using pishrink if available, otherwise just compress
+          curl -fsSL -o pishrink.sh https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh
+          chmod +x pishrink.sh
+          sudo ./pishrink.sh raspi.img || true
+
+          mv raspi.img raspi-agent-server-${{ inputs.agent-version }}.img
+          xz -3 raspi-agent-server-${{ inputs.agent-version }}.img
 
       - name: Attach image to release
         uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
         with:
           tag_name: ${{ inputs.agent-version }}
-          files: ${{ steps.build.outputs.image-path }}
+          files: raspi-agent-server-${{ inputs.agent-version }}.img.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
