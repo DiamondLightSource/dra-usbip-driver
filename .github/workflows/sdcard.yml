@@ -39,7 +39,7 @@ jobs:
           compression: xz
           compression-level: 6
           export-last-stage-only: true
-          increase-runner-disk-size: true
+          increase-runner-disk-size: false
           verbose-output: true
           docker-opts: -e AGENT_VERSION=${{ inputs.agent-version }}
 
