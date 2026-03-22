@@ -106,7 +106,7 @@ jobs:
           After=network.target
 
           [Service]
-          ExecStart=/usr/local/bin/agent
+          ExecStart=/usr/local/bin/agent --bind-all-devices
           Restart=on-failure
           RestartSec=5
 
@@ -214,5 +214,6 @@ jobs:
         with:
           tag_name: ${{ inputs.agent-version }}
           files: raspi-agent-server-${{ inputs.agent-version }}.img.xz
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
