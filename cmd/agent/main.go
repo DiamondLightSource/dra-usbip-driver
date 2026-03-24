@@ -58,7 +58,9 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(b)
+	if _, err := w.Write(b); err != nil {
+		klog.Errorf("Failed to write response: %s", err)
+	}
 }
 
 func main() {
@@ -75,5 +77,5 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /devices", listDevices)
 
-	http.ListenAndServe(":13240", mux)
+	klog.Fatal(http.ListenAndServe(":13240", mux))
 }
