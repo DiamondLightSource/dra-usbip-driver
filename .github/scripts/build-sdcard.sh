@@ -61,6 +61,7 @@ apt-get clean
 cat > /etc/modules-load.d/usbip.conf <<MOD
 usbip-core
 usbip-host
+usblp
 MOD
 
 cat > /etc/systemd/system/usbipd.service <<SVC
