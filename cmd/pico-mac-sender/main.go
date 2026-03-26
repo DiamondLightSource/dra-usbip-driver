@@ -64,9 +64,14 @@ func findPico() string {
 
 	for _, dev := range matches {
 		// The sysfs path for a tty device's USB parent has idVendor/idProduct.
-		// /sys/class/tty/ttyACMx/device/../idVendor
+		// We must resolve the "device" symlink before navigating to its parent,
+		// because filepath.Join would collapse "device/.." lexically.
 		ttyName := filepath.Base(dev)
-		devicePath := filepath.Join("/sys/class/tty", ttyName, "device", "..")
+		realDevice, err := filepath.EvalSymlinks(filepath.Join("/sys/class/tty", ttyName, "device"))
+		if err != nil {
+			continue
+		}
+		devicePath := filepath.Dir(realDevice)
 
 		vid, err := os.ReadFile(filepath.Join(devicePath, "idVendor"))
 		if err != nil {
