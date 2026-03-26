@@ -1,6 +1,7 @@
 # Binaries
 /agent
 /manager
+/pico-mac-sender
 /plugin
 *.exe
 
