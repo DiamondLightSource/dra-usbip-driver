@@ -20,23 +20,23 @@ import (
 )
 
 const (
-	picoVID  = "2e8a"
-	picoPID  = "0005"
-	baudRate = 115200
+	picoVID = "2e8a"
+	picoPID = "0005"
 
 	brotherVID = "04f9"
 	brotherPID = "2042"
 
-	// QL-700 print parameters for 62mm continuous tape.
-	printWidth    = 720
-	bytesPerLine  = printWidth / 8 // 90
-	fontScale     = 4
-	smallWidth    = printWidth / fontScale // 180
-	lineHeight    = 16                     // pixels in small image
-	labelPadding  = 8                      // top/bottom padding in small image
-	feedMargin    = 35                     // dots of margin before/after label
-	mediaWidthMM  = 62
-	mediaTypeCont = 0x0a // continuous roll
+	// QL-700 print parameters for DK-1204 die-cut labels (17×54mm).
+	// The print head is 720 dots wide; the printable area for this label
+	// starts at bit 56 from the left (byte 7), spanning 165 dots.
+	headWidth    = 720
+	bytesPerLine = headWidth / 8 // 90
+	labelWidth   = 165           // printable dots for 17mm
+	labelHeight  = 566           // printable dots for 54mm
+	labelOffset  = 56 // bit offset from left edge of print head
+	mediaWidthMM = 17
+	mediaLengthMM   = 54
+	mediaTypeDieCut = 0x0b
 )
 
 func getMACAddress() string {
@@ -187,95 +187,96 @@ func sendSerialMessage(devPath, message string) error {
 	return nil
 }
 
-// renderLabel creates a 720-pixel-wide monochrome image with the MAC address
-// and hostname rendered using a scaled-up bitmap font.
-func renderLabel(mac, hostname string) *image.Gray {
-	lines := []string{
-		"MAC Address:",
-		mac,
-		"",
-		"Hostname:",
-		hostname,
-	}
+// renderLabel creates a labelWidth × labelHeight monochrome image containing
+// the MAC address rotated 90° so text runs along the 54mm feed direction,
+// filling as much of the DK-1204 label as possible.
+func renderLabel(mac string) *image.Gray {
+	// Render text at native basicfont size (7×13) into a landscape buffer
+	// where width = long axis (566 px) and height = narrow axis (165 px).
+	// We then scale and rotate 90° CW into the final portrait image.
+	charW := 7 // basicfont advance
+	charH := 13
+	textW := len(mac) * charW // e.g. 17 × 7 = 119
 
-	smallH := len(lines)*lineHeight + 2*labelPadding
-
-	small := image.NewGray(image.Rect(0, 0, smallWidth, smallH))
+	small := image.NewGray(image.Rect(0, 0, textW, charH))
 	for i := range small.Pix {
 		small.Pix[i] = 255
 	}
-
 	d := &font.Drawer{
 		Dst:  small,
 		Src:  image.NewUniform(color.Black),
 		Face: basicfont.Face7x13,
 	}
-	for i, line := range lines {
-		d.Dot = fixed.P(5, labelPadding+(i+1)*lineHeight-3)
-		d.DrawString(line)
+	d.Dot = fixed.P(0, charH-2) // baseline
+	d.DrawString(mac)
+
+	// Scale to fill the label.  Text runs along labelHeight (566) and
+	// the scaled character height must fit within labelWidth (165).
+	scaleX := labelHeight / textW   // 566/119 = 4
+	scaleY := labelWidth / charH    // 165/13  = 12
+	if scaleX < 1 {
+		scaleX = 1
+	}
+	if scaleY > scaleX {
+		scaleY = scaleX // keep aspect ratio uniform
 	}
 
-	bigH := smallH * fontScale
-	big := image.NewGray(image.Rect(0, 0, printWidth, bigH))
-	for i := range big.Pix {
-		big.Pix[i] = 255
+	scaledW := textW * scaleX
+	scaledH := charH * scaleY
+
+	// Centre offsets within label dimensions.
+	offX := (labelHeight - scaledW) / 2
+	offY := (labelWidth - scaledH) / 2
+
+	// Build the final labelWidth × labelHeight image by scaling the small
+	// image and rotating 90° CW in a single pass.
+	// Rotation: rotated(rx, ry) = landscape(ry, labelWidth-1-rx).
+	out := image.NewGray(image.Rect(0, 0, labelWidth, labelHeight))
+	for i := range out.Pix {
+		out.Pix[i] = 255
 	}
-	for y := 0; y < smallH; y++ {
-		for x := 0; x < smallWidth; x++ {
-			c := small.GrayAt(x, y)
-			if c.Y == 255 {
-				continue
+	for sy := 0; sy < charH; sy++ {
+		for sx := 0; sx < textW; sx++ {
+			if small.GrayAt(sx, sy).Y >= 128 {
+				continue // skip white
 			}
-			for dy := 0; dy < fontScale; dy++ {
-				for dx := 0; dx < fontScale; dx++ {
-					big.SetGray(x*fontScale+dx, y*fontScale+dy, c)
+			for dy := 0; dy < scaleY; dy++ {
+				for dx := 0; dx < scaleX; dx++ {
+					// Landscape position.
+					lx := offX + sx*scaleX + dx
+					ly := offY + sy*scaleY + dy
+					// 90° CW rotation into portrait.
+					rx := ly
+					ry := lx
+					if rx >= 0 && rx < labelWidth && ry >= 0 && ry < labelHeight {
+						out.SetGray(rx, ry, color.Gray{Y: 0})
+					}
 				}
 			}
 		}
 	}
 
-	return big
+	return out
 }
 
-// imageToRaster converts a grayscale image to packed 1-bit raster lines
-// suitable for the Brother QL protocol (dark pixel = 1).
+// imageToRaster converts a labelWidth × labelHeight grayscale image to
+// 90-byte raster lines.  Pixels are placed at bit offset labelOffset (56)
+// within each 720-bit line, matching the DK-1204 position on the print head.
 func imageToRaster(img *image.Gray) [][]byte {
-	bounds := img.Bounds()
-	height := bounds.Dy()
+	height := img.Bounds().Dy()
 	lines := make([][]byte, height)
 
 	for y := 0; y < height; y++ {
 		line := make([]byte, bytesPerLine)
-		for x := 0; x < printWidth; x++ {
+		for x := 0; x < labelWidth; x++ {
 			if img.GrayAt(x, y).Y < 128 {
-				line[x/8] |= 1 << (7 - uint(x%8))
+				hx := labelOffset + x
+				line[hx/8] |= 1 << (7 - uint(hx%8))
 			}
 		}
 		lines[y] = line
 	}
 	return lines
-}
-
-// ql700Status reads and logs the 32-byte status response from the printer.
-func ql700Status(f *os.File) {
-	// Request status information.
-	if _, err := f.Write([]byte{0x1b, 0x69, 0x53}); err != nil {
-		klog.Warningf("Failed to request status: %v", err)
-		return
-	}
-	status := make([]byte, 32)
-	n, err := f.Read(status)
-	if err != nil {
-		klog.Warningf("Failed to read status: %v", err)
-		return
-	}
-	status = status[:n]
-	klog.Infof("Printer status (%d bytes): % 02x", n, status)
-	if n >= 19 {
-		klog.Infof("  Error info 1: 0x%02x  Error info 2: 0x%02x", status[8], status[9])
-		klog.Infof("  Media width: %d mm  Media type: 0x%02x", status[10], status[11])
-		klog.Infof("  Status type: 0x%02x  Phase: 0x%02x", status[18], status[19])
-	}
 }
 
 // printQL700Label sends a raster image to the Brother QL-700 using its
@@ -301,15 +302,20 @@ func printQL700Label(devPath string, img *image.Gray) error {
 		return fmt.Errorf("initialize: %w", err)
 	}
 
+	// Request status (write only — brother_ql sends this before print info).
+	if _, err := f.Write([]byte{0x1b, 0x69, 0x53}); err != nil {
+		return fmt.Errorf("status request: %w", err)
+	}
+
 	// Print information command.
 	printInfo := make([]byte, 13)
 	printInfo[0] = 0x1b
 	printInfo[1] = 0x69
 	printInfo[2] = 0x7a
 	printInfo[3] = 0xce // validity: recover | quality | length | width | type
-	printInfo[4] = mediaTypeCont
+	printInfo[4] = mediaTypeDieCut
 	printInfo[5] = mediaWidthMM
-	printInfo[6] = 0x00 // length = 0 (continuous)
+	printInfo[6] = mediaLengthMM
 	binary.LittleEndian.PutUint32(printInfo[7:11], numLines)
 	printInfo[11] = 0x00 // starting page
 	printInfo[12] = 0x00
@@ -322,27 +328,24 @@ func printQL700Label(devPath string, img *image.Gray) error {
 		return fmt.Errorf("auto cut: %w", err)
 	}
 
-	// Margins.
-	if _, err := f.Write([]byte{0x1b, 0x69, 0x64, byte(feedMargin), byte(feedMargin >> 8)}); err != nil {
+	// Cut every 1 label.
+	if _, err := f.Write([]byte{0x1b, 0x69, 0x41, 0x01}); err != nil {
+		return fmt.Errorf("cut interval: %w", err)
+	}
+
+	// Expanded mode: cut at end.
+	if _, err := f.Write([]byte{0x1b, 0x69, 0x4b, 0x08}); err != nil {
+		return fmt.Errorf("expanded mode: %w", err)
+	}
+
+	// Margins: 0 dots.
+	if _, err := f.Write([]byte{0x1b, 0x69, 0x64, 0x00, 0x00}); err != nil {
 		return fmt.Errorf("margins: %w", err)
 	}
 
-	// Raster data — write each line individually.
+	// Raster data — always use 0x67 format (matching brother_ql).
 	for i, line := range rasterLines {
-		blank := true
-		for _, b := range line {
-			if b != 0 {
-				blank = false
-				break
-			}
-		}
-		var err error
-		if blank {
-			_, err = f.Write([]byte{0x5a})
-		} else {
-			_, err = f.Write(append([]byte{0x67, 0x00, byte(bytesPerLine)}, line...))
-		}
-		if err != nil {
+		if _, err := f.Write(append([]byte{0x67, 0x00, byte(bytesPerLine)}, line...)); err != nil {
 			return fmt.Errorf("raster line %d: %w", i, err)
 		}
 	}
@@ -375,7 +378,7 @@ func main() {
 	if dev := findQL700(); dev != "" {
 		klog.Infof("QL-700 found at %s, printing label", dev)
 		time.Sleep(1 * time.Second)
-		if err := printQL700Label(dev, renderLabel(mac, hostname)); err != nil {
+		if err := printQL700Label(dev, renderLabel(mac)); err != nil {
 			klog.Errorf("Failed to print label: %v", err)
 		}
 		lastQL700 = dev
@@ -400,7 +403,7 @@ func main() {
 		if dev := findQL700(); dev != "" && dev != lastQL700 {
 			klog.Infof("QL-700 found at %s, printing label", dev)
 			time.Sleep(1 * time.Second)
-			if err := printQL700Label(dev, renderLabel(mac, hostname)); err != nil {
+			if err := printQL700Label(dev, renderLabel(mac)); err != nil {
 				klog.Errorf("Failed to print label: %v", err)
 			}
 			lastQL700 = dev
