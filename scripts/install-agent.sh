@@ -61,7 +61,7 @@ Description=DRA USB/IP Agent
 After=network.target
 
 [Service]
-ExecStart=${INSTALL_DIR}/${BINARY_NAME} --config=${CONFIG_FILE}
+ExecStart=${INSTALL_DIR}/${BINARY_NAME} --bind-all-devices --auto-bind --config=${CONFIG_FILE}
 Restart=on-failure
 RestartSec=5
 

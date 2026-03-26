@@ -95,7 +95,7 @@ Description=DRA USB/IP Agent
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/agent --bind-all-devices --config=/etc/dra-usbip-agent/config.yaml
+ExecStart=/usr/local/bin/agent --bind-all-devices --auto-bind --config=/etc/dra-usbip-agent/config.yaml
 Restart=on-failure
 RestartSec=5
 

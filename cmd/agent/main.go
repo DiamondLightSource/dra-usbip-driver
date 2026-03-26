@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
@@ -16,27 +17,31 @@ import (
 
 var (
 	bindAllDevices bool
+	autoBind       bool
 	configPath     string
 	cfg            *agentconfig.Config
 )
 
 func init() {
 	pflag.BoolVar(&bindAllDevices, "bind-all-devices", false, "bind all valid devices to usbip")
+	pflag.BoolVar(&autoBind, "auto-bind", false, "poll for new USB devices every 5 seconds and bind them automatically")
 	pflag.StringVar(&configPath, "config", "", "path to device filter config file")
 }
 
-func listDevices(w http.ResponseWriter, req *http.Request) {
+// bindDevices discovers local USB devices, applies config filters,
+// binds unbound devices if binding is enabled, and returns metadata
+// for all non-excluded devices.
+func bindDevices() ([]*devicemetadata.UdevadmInfo, error) {
 	localDevices, err := usbip.GetLocalDevices()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("could not list local usb devices: %s", err), http.StatusInternalServerError)
-		return
+		return nil, fmt.Errorf("could not list local usb devices: %w", err)
 	}
 
 	var devicesMetadata []*devicemetadata.UdevadmInfo
 	for _, device := range localDevices {
 		udevInfo, err := usbip.GetLocalDeviceInfo(device)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to get device info for %s: %s", device, err), http.StatusInternalServerError)
+			klog.Errorf("Failed to get device info for %s: %s", device, err)
 			continue
 		}
 
@@ -46,11 +51,8 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if udevInfo.Driver != "usbip-host" && bindAllDevices {
-			// Device is not bound to usbip driver, do that now.
 			err := usbip.BindDevice(device)
 			if err != nil {
-				// Log but don't error - need to continue on to
-				// return list of other devices.
 				klog.Errorf("Failed to bind device %s: %s", device, err)
 				continue
 			}
@@ -58,6 +60,16 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 		}
 
 		devicesMetadata = append(devicesMetadata, udevInfo)
+	}
+
+	return devicesMetadata, nil
+}
+
+func listDevices(w http.ResponseWriter, req *http.Request) {
+	devicesMetadata, err := bindDevices()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	b, err := json.Marshal(devicesMetadata)
@@ -69,6 +81,17 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(b); err != nil {
 		klog.Errorf("Failed to write response: %s", err)
+	}
+}
+
+// autoBindLoop periodically discovers and binds new USB devices.
+func autoBindLoop() {
+	klog.Info("Auto-bind enabled, polling every 5 seconds")
+	for {
+		if _, err := bindDevices(); err != nil {
+			klog.Errorf("Auto-bind poll failed: %s", err)
+		}
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -90,6 +113,10 @@ func main() {
 	}
 	if !moduleLoaded {
 		klog.Fatal("usbip_host kernel module is not loaded")
+	}
+
+	if autoBind {
+		go autoBindLoop()
 	}
 
 	mux := http.NewServeMux()
