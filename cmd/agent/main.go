@@ -126,6 +126,8 @@ func autoBindLoop() {
 			}
 
 			if cfg.ShouldExclude(device, udevInfo.VendorID, udevInfo.ModelID) {
+				klog.Infof("Excluding device %s (%s:%s) by config", device, udevInfo.VendorID, udevInfo.ModelID)
+				bindFailed[device] = true
 				continue
 			}
 
