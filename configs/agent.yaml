@@ -1,0 +1,10 @@
+# Devices matching any rule below will not be bound or reported by the agent.
+excludeDevices:
+  # Exclude by vendor:product ID.
+  deviceIDs:
+    - "2e8a:0005" # Raspberry Pi Pico
+  # Exclude by USB device class (checked at both device and interface level).
+  # See https://www.usb.org/defined-class-codes for the full list.
+  deviceClasses:
+    - "03" # HID (keyboard, mouse, etc.)
+    - "08" # Mass Storage

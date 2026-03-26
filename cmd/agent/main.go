@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
 
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/agentconfig"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/kmod"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
@@ -15,10 +16,13 @@ import (
 
 var (
 	bindAllDevices bool
+	configPath     string
+	cfg            *agentconfig.Config
 )
 
 func init() {
 	pflag.BoolVar(&bindAllDevices, "bind-all-devices", false, "bind all valid devices to usbip")
+	pflag.StringVar(&configPath, "config", "", "path to device filter config file")
 }
 
 func listDevices(w http.ResponseWriter, req *http.Request) {
@@ -33,6 +37,11 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 		udevInfo, err := usbip.GetLocalDeviceInfo(device)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to get device info for %s: %s", device, err), http.StatusInternalServerError)
+			continue
+		}
+
+		if cfg.ShouldExclude(device, udevInfo.VendorID, udevInfo.ModelID) {
+			klog.Infof("Excluding device %s (%s:%s) by config", device, udevInfo.VendorID, udevInfo.ModelID)
 			continue
 		}
 
@@ -65,6 +74,15 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	pflag.Parse()
+
+	if configPath != "" {
+		var err error
+		cfg, err = agentconfig.Load(configPath)
+		if err != nil {
+			klog.Fatalf("Failed to load config: %s", err)
+		}
+		klog.Infof("Loaded device filter config from %s", configPath)
+	}
 
 	moduleLoaded, err := kmod.IsLoaded("usbip_host")
 	if err != nil {
