@@ -41,6 +41,19 @@ mv /tmp/${BINARY_NAME} "${INSTALL_DIR}/${BINARY_NAME}"
 
 echo "Installed ${INSTALL_DIR}/${BINARY_NAME}"
 
+# Install default config
+CONFIG_DIR="/etc/dra-usbip-agent"
+CONFIG_FILE="${CONFIG_DIR}/config.yaml"
+CONFIG_URL="https://raw.githubusercontent.com/${REPO}/${TAG}/configs/agent.yaml"
+
+mkdir -p "${CONFIG_DIR}"
+if [ ! -f "${CONFIG_FILE}" ]; then
+  curl -fsSL -o "${CONFIG_FILE}" "${CONFIG_URL}"
+  echo "Installed default config to ${CONFIG_FILE}"
+else
+  echo "Config ${CONFIG_FILE} already exists, skipping"
+fi
+
 # Create systemd service
 cat > /etc/systemd/system/${SERVICE_NAME}.service <<EOF
 [Unit]
@@ -48,7 +61,7 @@ Description=DRA USB/IP Agent
 After=network.target
 
 [Service]
-ExecStart=${INSTALL_DIR}/${BINARY_NAME}
+ExecStart=${INSTALL_DIR}/${BINARY_NAME} --bind-all-devices --auto-bind --config=${CONFIG_FILE}
 Restart=on-failure
 RestartSec=5
 

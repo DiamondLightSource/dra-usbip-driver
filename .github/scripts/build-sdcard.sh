@@ -85,13 +85,17 @@ sudo curl -fsSL -o /mnt/usr/local/bin/agent \
   "https://github.com/${REPO}/releases/download/${AGENT_VERSION}/agent-linux-arm64"
 sudo chmod +x /mnt/usr/local/bin/agent
 
+sudo mkdir -p /mnt/etc/dra-usbip-agent
+sudo curl -fsSL -o /mnt/etc/dra-usbip-agent/config.yaml \
+  "https://raw.githubusercontent.com/${REPO}/${AGENT_VERSION}/configs/agent.yaml"
+
 sudo tee /mnt/etc/systemd/system/dra-usbip-agent.service <<SVC
 [Unit]
 Description=DRA USB/IP Agent
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/agent --bind-all-devices
+ExecStart=/usr/local/bin/agent --bind-all-devices --auto-bind --config=/etc/dra-usbip-agent/config.yaml
 Restart=on-failure
 RestartSec=5
 
