@@ -20,6 +20,11 @@ var (
 	autoBind       bool
 	configPath     string
 	cfg            *agentconfig.Config
+
+	// bindFailed tracks devices that failed to bind so the auto-bind
+	// loop doesn't retry them every poll. Entries are cleared when the
+	// device disappears (unplugged) so re-plugging triggers a retry.
+	bindFailed = make(map[string]bool)
 )
 
 func init() {
@@ -85,12 +90,56 @@ func listDevices(w http.ResponseWriter, req *http.Request) {
 }
 
 // autoBindLoop periodically discovers and binds new USB devices.
+// It tracks devices that fail to bind and skips them on subsequent
+// polls. When a device disappears (unplugged), its failure state
+// is cleared so re-plugging triggers a fresh bind attempt.
 func autoBindLoop() {
 	klog.Info("Auto-bind enabled, polling every 5 seconds")
 	for {
-		if _, err := bindDevices(); err != nil {
+		localDevices, err := usbip.GetLocalDevices()
+		if err != nil {
 			klog.Errorf("Auto-bind poll failed: %s", err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
+
+		// Clear failures for devices that are no longer present.
+		present := make(map[string]bool, len(localDevices))
+		for _, d := range localDevices {
+			present[d] = true
+		}
+		for d := range bindFailed {
+			if !present[d] {
+				delete(bindFailed, d)
+			}
+		}
+
+		for _, device := range localDevices {
+			if bindFailed[device] {
+				continue
+			}
+
+			udevInfo, err := usbip.GetLocalDeviceInfo(device)
+			if err != nil {
+				klog.Errorf("Failed to get device info for %s: %s", device, err)
+				continue
+			}
+
+			if cfg.ShouldExclude(device, udevInfo.VendorID, udevInfo.ModelID) {
+				continue
+			}
+
+			if udevInfo.Driver != "usbip-host" {
+				err := usbip.BindDevice(device)
+				if err != nil {
+					klog.Errorf("Failed to bind device %s: %s", device, err)
+					bindFailed[device] = true
+					continue
+				}
+				klog.Infof("Bound device %s", device)
+			}
+		}
+
 		time.Sleep(5 * time.Second)
 	}
 }
