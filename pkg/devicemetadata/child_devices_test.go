@@ -47,10 +47,32 @@ var childrenTests = []childrenTest{
 		fstest.MapFS{
 			"idVendor":                           file("0403"),
 			"idProduct":                          file("6015"),
+			"uevent":                             file("MAJOR=189\nMINOR=260\nDEVNAME=bus/usb/003/005\nDEVTYPE=usb_device"),
 			"3-1:1.0/ttyUSB0/tty/ttyUSB0/dev":    file("188:0"),
 			"3-1:1.0/ttyUSB0/tty/ttyUSB0/device": link("../../../ttyUSB0"),
+			"3-1:1.0/ttyUSB0/tty/ttyUSB0/uevent": file("MAJOR=188\nMINOR=0\nDEVNAME=ttyUSB0"),
 		},
 		[]string{"3-1:1.0/ttyUSB0/tty/ttyUSB0"},
+	},
+	{
+		// Thorlabs flipper.
+		"flipper",
+		fstest.MapFS{
+			"idVendor":  file("0403"),
+			"idProduct": file("faf0"),
+			"uevent":    file("MAJOR=189\nMINOR=258\nDEVNAME=bus/usb/003/003\nDEVTYPE=usb_device"),
+			// Serial child.
+			"3-1:1.0/ttyUSB0/tty/ttyUSB0/dev":    file("188:0"),
+			"3-1:1.0/ttyUSB0/tty/ttyUSB0/device": link("../../../ttyUSB0"),
+			"3-1:1.0/ttyUSB0/tty/ttyUSB0/uevent": file("MAJOR=188\nMINOR=0\nDEVNAME=ttyUSB0"),
+			// GPIO child.
+			"3-1:1.0/gpiochip0/dev":    file("254:0"),
+			"3-1:1.0/gpiochip0/uevent": file("MAJOR=254\nMINOR=0\nDEVNAME=gpiochip0"),
+			// Has a "device" file but not an actual child device.
+			"3-1:1.0/gpio/gpiochip1020/device": link("../../../3-1:1.0"),
+			"3-1:1.0/gpio/gpiochip1020/uevent": file(""),
+		},
+		[]string{"3-1:1.0/ttyUSB0/tty/ttyUSB0", "3-1:1.0/gpiochip0"},
 	},
 }
 
