@@ -1,10 +1,12 @@
 package devicemetadata
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Find all child devices of a given device.
@@ -46,16 +48,27 @@ func findChildDevicePaths(sysFilesystem fs.FS) ([]string, error) {
 			return fmt.Errorf("error processing %q: %s", path, err)
 		}
 
-		// A file called "device" corresponds to a
+		// If the FULL path is "uevent" then it's
+		// not a sub device, it's the top level one.
+		if path == "uevent" {
+			return nil
+		}
+
+		// A file called "uevent" corresponds to a
 		// sub device of the USB device.
-		if d.Name() == "device" {
-			// The "device" file should be a symlink.
-			if d.Type() != fs.ModeSymlink {
+		if d.Name() == "uevent" {
+			isDevice, err := hasDevName(sysFilesystem, path)
+			if err != nil {
+				return err
+			}
+
+			// Ignore the device if it has no entry in /dev.
+			if !isDevice {
 				return nil
 			}
 
 			// The real device path is the directory
-			// that contains the "device" file.
+			// that contains the "uevent" file.
 			dir := filepath.Dir(path)
 			foundDevices = append(foundDevices, dir)
 		}
@@ -69,4 +82,24 @@ func findChildDevicePaths(sysFilesystem fs.FS) ([]string, error) {
 	}
 
 	return foundDevices, nil
+}
+
+// Read a uevent file and check if it has
+// a DEVNAME property, indicating a device
+// path in /dev.
+func hasDevName(sysFilesystem fs.FS, path string) (bool, error) {
+	file, err := sysFilesystem.Open(path)
+	if err != nil {
+		return false, fmt.Errorf("error opening uevent file: %v", err)
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "DEVNAME=") {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
