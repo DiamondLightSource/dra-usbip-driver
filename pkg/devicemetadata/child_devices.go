@@ -27,6 +27,15 @@ func (d *UdevadmInfo) FindChildren() ([]*UdevadmInfo, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading data for child device %s: %s", childPath, err)
 		}
+
+		// The search shouldn't return any without,
+		// but double check that there is actually
+		// a /dev device that can be mounted.
+		if childDevice.DevName == "" {
+			// If not, ignore it.
+			continue
+		}
+
 		children = append(children, childDevice)
 	}
 
