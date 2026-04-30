@@ -70,6 +70,7 @@ func (d *driver) PrepareResourceClaims(ctx context.Context, claims []*resourceap
 func (d *driver) prepareResourceClaim(_ context.Context, claim *resourceapi.ResourceClaim) kubeletplugin.PrepareResult {
 	preparedDevices, err := d.state.Prepare(claim)
 	if err != nil {
+		klog.Errorf("Claim %s device prepare error: %v", claim.UID, err)
 		return kubeletplugin.PrepareResult{
 			Err: fmt.Errorf("error preparing claim %v: %w", claim.UID, err),
 		}
@@ -95,8 +96,11 @@ func (d *driver) UnprepareResourceClaims(ctx context.Context, claims []kubeletpl
 	result := make(map[types.UID]error)
 
 	for _, claim := range claims {
-		klog.Infof("Unprepare claim %s", claim.UID)
-		result[claim.UID] = d.state.Unprepare(string(claim.UID))
+		err := d.state.Unprepare(string(claim.UID))
+		result[claim.UID] = err
+		if err != nil {
+			klog.Errorf("Claim %s device unprepare error: %v", claim.UID, err)
+		}
 	}
 
 	return result, nil
