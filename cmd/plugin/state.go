@@ -11,6 +11,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/checkpointmanager"
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
 
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
 )
 
@@ -119,6 +120,15 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drav1.Device
 	preparedDevices, err := s.prepareDevices(claim)
 	if err != nil {
 		return nil, fmt.Errorf("prepared failed: %v", err)
+	}
+
+	// Must wait for devices to settle, or the CDI
+	// creation may fail to discover child devices.
+	if err = devicemetadata.UdevadmSettle(); err != nil {
+		if err2 := s.unprepareDevices(claimUID, preparedDevices); err2 != nil {
+			return nil, fmt.Errorf("failed to detach devices (%v) while recovering from devices failing to settle (%v)", err2, err)
+		}
+		return nil, fmt.Errorf("error waiting for devices to settle: %v", err)
 	}
 
 	if err = s.cdi.CreateClaimSpecFile(claimUID, preparedDevices); err != nil {
