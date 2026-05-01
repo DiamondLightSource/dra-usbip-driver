@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
 	cdiparser "tags.cncf.io/container-device-interface/pkg/parser"
@@ -85,6 +86,13 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 			return fmt.Errorf("could not get local device info for %s/%s: %w", device.RemoteHost, device.RemoteBusID, err)
 		}
 
+		// Insert an environment variable mapping the claim/request
+		// to the device path of the USB device.
+		envName := sanitiseEnvName(fmt.Sprintf("USBIP_DEVICE_%s_%s", device.claimName, device.requestName))
+		envVars := []string{
+			fmt.Sprintf("%s=%s", envName, devInfo.DevName),
+		}
+
 		// Main device node is the USB device itself.
 		deviceNodes := []*cdispec.DeviceNode{
 			&cdispec.DeviceNode{
@@ -99,19 +107,21 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 		if err != nil {
 			return fmt.Errorf("error finding children: %s", err)
 		}
-		for _, child := range children {
+		for n, child := range children {
 			node := &cdispec.DeviceNode{
 				Path:  child.DevName,
 				Major: child.Major,
 				Minor: child.Minor,
 			}
 			deviceNodes = append(deviceNodes, node)
+
+			// Each child gets an individual env var.
+			childEnv := fmt.Sprintf("%s_CHILD_%d=%s", envName, n, child.DevName)
+			envVars = append(envVars, childEnv)
 		}
 
 		containerEdits := cdispec.ContainerEdits{
-			Env: []string{
-				fmt.Sprintf("USBIP_DEVICE_%s_%s=%s/%s", devInfo.BusNum, devInfo.DevNum, device.RemoteHost, device.RemoteBusID),
-			},
+			Env:         envVars,
 			DeviceNodes: deviceNodes,
 		}
 
@@ -157,4 +167,22 @@ func (cdi *CDIHandler) kind() string {
 
 func (cdi *CDIHandler) vendor() string {
 	return "k8s." + cdi.driverName
+}
+
+// Make input string into a valid environment variable name.
+// Replace non alphanumeric characters with underscores.
+func sanitiseEnvName(input string) string {
+	// Alphanumeric characters and underscore.
+	valid := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
+	var out strings.Builder
+	for _, char := range strings.Split(input, "") {
+		if strings.Contains(valid, char) {
+			out.WriteString(strings.ToUpper(char))
+		} else {
+			out.WriteString("_")
+		}
+	}
+
+	return out.String()
 }

@@ -36,6 +36,13 @@ type AttachedDevice struct {
 	RemoteHost  string
 	RemoteBusID string
 
+	// Which claim/request this device comes from.
+	// Not exported as doesn't need to be saved in
+	// the checkpoint file, only passed to the CDI
+	// spec file setup.
+	claimName   string
+	requestName string
+
 	// Device minor number, to uniquely
 	// identify the locally mounted device,
 	// as the local bus ID may be re-used.
@@ -182,9 +189,23 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (Attached
 
 		klog.Infof("Attached remote device %s/%s with local bus ID %s", remoteHost, remoteBusID, localBus)
 
+		// The driver needs to be able to construct a unique env var name per device.
+		// For templated claims, the name of the  ResourceClaim object contains the
+		// name of the pod, so it is not deterministic. Use this annotation to get the
+		// (user given) name of the claim from the Pod's resourceClaim definitions.
+		claimName, ok := claim.ObjectMeta.Annotations["resource.kubernetes.io/pod-claim-name"]
+		if !ok {
+			// Annotation is only set for templated claims.
+			// Fall back to the name of the claim object itself.
+			// If not a templated claim, should be deterministic.
+			claimName = claim.ObjectMeta.Name
+		}
+
 		d := &AttachedDevice{
 			RemoteHost:      remoteHost,
 			RemoteBusID:     remoteBusID,
+			claimName:       claimName,
+			requestName:     result.Request,
 			DeviceNodeMinor: devInfo.Minor,
 			Device: drav1.Device{
 				RequestNames: []string{result.Request},
