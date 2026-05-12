@@ -112,3 +112,51 @@ func hasDevName(sysFilesystem fs.FS, path string) (bool, error) {
 
 	return false, nil
 }
+
+type aliasedDevice struct {
+	// Device alias, path in /dev.
+	Alias  string
+	Device *UdevadmInfo
+}
+
+// Construct a set of unique device aliases for
+// this set of child devices, with the subsystem
+// of the device as the main identifier.
+// E.g /dev/usbip-<req>-<dev>-tty (-> /dev/ttyUSB0).
+func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice {
+	var aliasedDevices []*aliasedDevice
+
+	// Count how many children there are of each subsystem type.
+	totalDevicesPerSubsystem := make(map[string]int)
+	for _, child := range children {
+		n, _ := totalDevicesPerSubsystem[child.Subsystem]
+		totalDevicesPerSubsystem[child.Subsystem] = n + 1
+	}
+
+	// While creating the child device aliases, how
+	// many of each subsystem have already been seen.
+	seenDevicesPerSubsystem := make(map[string]int)
+
+	// Construct the aliases.
+	for _, child := range children {
+		// Is this the first, second, etc device of this subsystem type?
+		subsystemIndex, _ := seenDevicesPerSubsystem[child.Subsystem]
+		seenDevicesPerSubsystem[child.Subsystem] = subsystemIndex + 1
+
+		deviceAlias := fmt.Sprintf("/dev/usbip-%s-%s-%s", claim, request, child.Subsystem)
+		if total, _ := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
+			// There are more than one children of this subsystem, have to index them.
+			// E.g /dev/usbip-c-d-tty -> /dev/usbip-c-d-tty0.
+			deviceAlias = fmt.Sprintf("%s%d", deviceAlias, subsystemIndex)
+		}
+
+		a := &aliasedDevice{
+			Alias:  deviceAlias,
+			Device: child,
+		}
+
+		aliasedDevices = append(aliasedDevices, a)
+	}
+
+	return aliasedDevices
+}

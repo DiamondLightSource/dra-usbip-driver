@@ -85,3 +85,47 @@ func TestFindChildren(t *testing.T) {
 		})
 	}
 }
+
+var childTTY0 = &UdevadmInfo{
+	DevName:   "/dev/ttyUSB0",
+	Subsystem: "tty",
+}
+
+var childTTY1 = &UdevadmInfo{
+	DevName:   "/dev/ttyUSB1",
+	Subsystem: "tty",
+}
+
+var childGPIO0 = &UdevadmInfo{
+	DevName:   "/dev/gpiochip0",
+	Subsystem: "gpio",
+}
+
+type aliasTest struct {
+	name            string
+	children        []*UdevadmInfo
+	expectedAliases []string
+}
+
+var aliasTests = []aliasTest{
+	{name: "onetty", children: []*UdevadmInfo{childTTY0}, expectedAliases: []string{"/dev/usbip-c-d-tty"}},
+	{name: "twotty", children: []*UdevadmInfo{childTTY0, childTTY1}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1"}},
+	{name: "onegpio", children: []*UdevadmInfo{childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-gpio"}},
+	{name: "mix", children: []*UdevadmInfo{childTTY0, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty", "/dev/usbip-c-d-gpio"}},
+	{name: "mixmulti", children: []*UdevadmInfo{childTTY0, childTTY1, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1", "/dev/usbip-c-d-gpio"}},
+}
+
+func TestToAliases(t *testing.T) {
+	for _, tt := range aliasTests {
+		t.Run(tt.name, func(t *testing.T) {
+			aliases := ToAliases("c", "d", tt.children)
+
+			var aliasNames []string
+			for _, child := range aliases {
+				aliasNames = append(aliasNames, child.Alias)
+			}
+
+			require.ElementsMatch(t, tt.expectedAliases, aliasNames)
+		})
+	}
+}

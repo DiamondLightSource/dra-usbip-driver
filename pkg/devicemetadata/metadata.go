@@ -25,6 +25,9 @@ type UdevadmInfo struct {
 	BusNum  string `json:"BUSNUM"`
 	DevNum  string `json:"DEVNUM"`
 
+	// Device subsystem.
+	Subsystem string `json:"SUBSYSTEM"`
+
 	// Device node major and minor numbers.
 	Major int64 `json:"MAJOR,string"`
 	Minor int64 `json:"MINOR,string"`
