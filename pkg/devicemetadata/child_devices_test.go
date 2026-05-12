@@ -105,6 +105,8 @@ type aliasTest struct {
 	name            string
 	children        []*UdevadmInfo
 	expectedAliases []string
+	claim           string
+	device          string
 }
 
 var aliasTests = []aliasTest{
@@ -113,12 +115,22 @@ var aliasTests = []aliasTest{
 	{name: "onegpio", children: []*UdevadmInfo{childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-gpio"}},
 	{name: "mix", children: []*UdevadmInfo{childTTY0, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty", "/dev/usbip-c-d-gpio"}},
 	{name: "mixmulti", children: []*UdevadmInfo{childTTY0, childTTY1, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1", "/dev/usbip-c-d-gpio"}},
+	{name: "slashname", device: "req-0/device-0", children: []*UdevadmInfo{childTTY0}, expectedAliases: []string{"/dev/usbip-c-req-0-device-0-tty"}},
 }
 
 func TestToAliases(t *testing.T) {
 	for _, tt := range aliasTests {
 		t.Run(tt.name, func(t *testing.T) {
-			aliases := ToAliases("c", "d", tt.children)
+			claim := tt.claim
+			if claim == "" {
+				claim = "c"
+			}
+			device := tt.device
+			if device == "" {
+				device = "d"
+			}
+
+			aliases := ToAliases(claim, device, tt.children)
 
 			var aliasNames []string
 			for _, child := range aliases {

@@ -126,6 +126,9 @@ type aliasedDevice struct {
 func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice {
 	var aliasedDevices []*aliasedDevice
 
+	claim = sanitise(claim)
+	request = sanitise(request)
+
 	// Count how many children there are of each subsystem type.
 	totalDevicesPerSubsystem := make(map[string]int)
 	for _, child := range children {
@@ -159,4 +162,24 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 	}
 
 	return aliasedDevices
+}
+
+// Device alias can't have any slashes or
+// other invalid characters for a device path.
+func sanitise(input string) string {
+	// Lowercase alphanumeric characters and dash.
+	valid := "abcdefghijklmnopqrstuvwxyz1234567890-"
+
+	var out strings.Builder
+	for _, char := range strings.Split(input, "") {
+		c := strings.ToLower(char)
+		if strings.Contains(valid, c) {
+			out.WriteString(c)
+		} else {
+			// Replace invalid with dash.
+			out.WriteString("-")
+		}
+	}
+
+	return out.String()
 }
