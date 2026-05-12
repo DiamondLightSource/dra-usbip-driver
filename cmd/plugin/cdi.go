@@ -8,6 +8,7 @@ import (
 	cdiparser "tags.cncf.io/container-device-interface/pkg/parser"
 	cdispec "tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
 )
 
@@ -107,16 +108,29 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 		if err != nil {
 			return fmt.Errorf("error finding children: %s", err)
 		}
-		for n, child := range children {
+
+		aliasedChildren := devicemetadata.ToAliases(device.claimName, device.requestName, children)
+
+		for n, child := range aliasedChildren {
+			// Mount with the same name as on the host.
 			node := &cdispec.DeviceNode{
-				Path:  child.DevName,
-				Major: child.Major,
-				Minor: child.Minor,
+				Path:  child.Device.DevName,
+				Major: child.Device.Major,
+				Minor: child.Device.Minor,
 			}
 			deviceNodes = append(deviceNodes, node)
 
+			// Mount with an alias.
+			aliasNode := &cdispec.DeviceNode{
+				Path:     child.Alias,
+				HostPath: child.Device.DevName,
+				Major:    child.Device.Major,
+				Minor:    child.Device.Minor,
+			}
+			deviceNodes = append(deviceNodes, aliasNode)
+
 			// Each child gets an individual env var.
-			childEnv := fmt.Sprintf("%s_CHILD_%d=%s", envName, n, child.DevName)
+			childEnv := fmt.Sprintf("%s_CHILD_%d=%s", envName, n, child.Device.DevName)
 			envVars = append(envVars, childEnv)
 		}
 
