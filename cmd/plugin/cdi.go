@@ -9,6 +9,7 @@ import (
 
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/utils"
 )
 
 const cdiCommonDeviceName = "common"
@@ -88,7 +89,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 
 		// Insert an environment variable mapping the claim/request
 		// to the device path of the USB device.
-		envName := sanitiseEnvName(fmt.Sprintf("USBIP_DEVICE_%s_%s", device.claimName, device.requestName))
+		envName := utils.SanitiseEnvName(fmt.Sprintf("USBIP_DEVICE_%s_%s", device.claimName, device.requestName))
 		envVars := []string{
 			fmt.Sprintf("%s=%s", envName, devInfo.DevName),
 		}
@@ -110,7 +111,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 
 		aliasedChildren := devicemetadata.ToAliases(device.claimName, device.requestName, children)
 
-		for n, child := range aliasedChildren {
+		for _, child := range aliasedChildren {
 			// Mount with the same name as on the host.
 			node := &cdispec.DeviceNode{
 				Path:  child.Device.DevName,

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/utils"
 )
 
 // Find all child devices of a given device.
@@ -127,8 +129,8 @@ type aliasedDevice struct {
 func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice {
 	var aliasedDevices []*aliasedDevice
 
-	claim = sanitise(claim)
-	request = sanitise(request)
+	claim = utils.SanitiseAliasName(claim)
+	request = utils.SanitiseAliasName(request)
 
 	// Count how many children there are of each subsystem type.
 	totalDevicesPerSubsystem := make(map[string]int)
@@ -158,7 +160,7 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 		if total, _ := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
 			envVar = fmt.Sprintf("%s%d", envVar, subsystemIndex)
 		}
-		envVar = sanitiseEnvName(envVar)
+		envVar = utils.SanitiseEnvName(envVar)
 
 		a := &aliasedDevice{
 			Alias:  deviceAlias,
@@ -170,43 +172,4 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 	}
 
 	return aliasedDevices
-}
-
-// Device alias can't have any slashes or
-// other invalid characters for a device path.
-func sanitise(input string) string {
-	// Lowercase alphanumeric characters and dash.
-	valid := "abcdefghijklmnopqrstuvwxyz1234567890-"
-
-	var out strings.Builder
-	for _, char := range strings.Split(input, "") {
-		c := strings.ToLower(char)
-		if strings.Contains(valid, c) {
-			out.WriteString(c)
-		} else {
-			// Replace invalid with dash.
-			out.WriteString("-")
-		}
-	}
-
-	return out.String()
-}
-
-// Make input string into a valid environment variable name.
-// Replace non alphanumeric characters with underscores.
-func sanitiseEnvName(input string) string {
-	// Alphanumeric characters and underscore.
-	valid := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-
-	var out strings.Builder
-	for _, char := range strings.Split(input, "") {
-		c := strings.ToUpper(char)
-		if strings.Contains(valid, c) {
-			out.WriteString(c)
-		} else {
-			out.WriteString("_")
-		}
-	}
-
-	return out.String()
 }
