@@ -116,6 +116,7 @@ func hasDevName(sysFilesystem fs.FS, path string) (bool, error) {
 type aliasedDevice struct {
 	// Device alias, path in /dev.
 	Alias  string
+	Env    string
 	Device *UdevadmInfo
 }
 
@@ -153,8 +154,15 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 			deviceAlias = fmt.Sprintf("%s%d", deviceAlias, subsystemIndex)
 		}
 
+		envVar := fmt.Sprintf("USBIP_DEVICE_%s_%s_%s", claim, request, child.Subsystem)
+		if total, _ := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
+			envVar = fmt.Sprintf("%s%d", envVar, subsystemIndex)
+		}
+		envVar = sanitiseEnvName(envVar)
+
 		a := &aliasedDevice{
 			Alias:  deviceAlias,
+			Env:    envVar,
 			Device: child,
 		}
 
@@ -178,6 +186,25 @@ func sanitise(input string) string {
 		} else {
 			// Replace invalid with dash.
 			out.WriteString("-")
+		}
+	}
+
+	return out.String()
+}
+
+// Make input string into a valid environment variable name.
+// Replace non alphanumeric characters with underscores.
+func sanitiseEnvName(input string) string {
+	// Alphanumeric characters and underscore.
+	valid := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
+	var out strings.Builder
+	for _, char := range strings.Split(input, "") {
+		c := strings.ToUpper(char)
+		if strings.Contains(valid, c) {
+			out.WriteString(c)
+		} else {
+			out.WriteString("_")
 		}
 	}
 

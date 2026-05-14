@@ -5,6 +5,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -105,17 +106,18 @@ type aliasTest struct {
 	name            string
 	children        []*UdevadmInfo
 	expectedAliases []string
+	expectedEnvs    []string
 	claim           string
 	device          string
 }
 
 var aliasTests = []aliasTest{
-	{name: "onetty", children: []*UdevadmInfo{childTTY0}, expectedAliases: []string{"/dev/usbip-c-d-tty"}},
-	{name: "twotty", children: []*UdevadmInfo{childTTY0, childTTY1}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1"}},
-	{name: "onegpio", children: []*UdevadmInfo{childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-gpio"}},
-	{name: "mix", children: []*UdevadmInfo{childTTY0, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty", "/dev/usbip-c-d-gpio"}},
-	{name: "mixmulti", children: []*UdevadmInfo{childTTY0, childTTY1, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1", "/dev/usbip-c-d-gpio"}},
-	{name: "slashname", device: "req-0/device-0", children: []*UdevadmInfo{childTTY0}, expectedAliases: []string{"/dev/usbip-c-req-0-device-0-tty"}},
+	{name: "onetty", children: []*UdevadmInfo{childTTY0}, expectedAliases: []string{"/dev/usbip-c-d-tty"}, expectedEnvs: []string{"USBIP_DEVICE_C_D_TTY"}},
+	{name: "twotty", children: []*UdevadmInfo{childTTY0, childTTY1}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1"}, expectedEnvs: []string{"USBIP_DEVICE_C_D_TTY0", "USBIP_DEVICE_C_D_TTY1"}},
+	{name: "onegpio", children: []*UdevadmInfo{childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-gpio"}, expectedEnvs: []string{"USBIP_DEVICE_C_D_GPIO"}},
+	{name: "mix", children: []*UdevadmInfo{childTTY0, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty", "/dev/usbip-c-d-gpio"}, expectedEnvs: []string{"USBIP_DEVICE_C_D_TTY", "USBIP_DEVICE_C_D_GPIO"}},
+	{name: "mixmulti", children: []*UdevadmInfo{childTTY0, childTTY1, childGPIO0}, expectedAliases: []string{"/dev/usbip-c-d-tty0", "/dev/usbip-c-d-tty1", "/dev/usbip-c-d-gpio"}, expectedEnvs: []string{"USBIP_DEVICE_C_D_TTY0", "USBIP_DEVICE_C_D_TTY1", "USBIP_DEVICE_C_D_GPIO"}},
+	{name: "slashname", device: "req-0/device-0", children: []*UdevadmInfo{childTTY0}, expectedAliases: []string{"/dev/usbip-c-req-0-device-0-tty"}, expectedEnvs: []string{"USBIP_DEVICE_C_REQ_0_DEVICE_0_TTY"}},
 }
 
 func TestToAliases(t *testing.T) {
@@ -133,11 +135,15 @@ func TestToAliases(t *testing.T) {
 			aliases := ToAliases(claim, device, tt.children)
 
 			var aliasNames []string
+			var envVars []string
 			for _, child := range aliases {
 				aliasNames = append(aliasNames, child.Alias)
+				envVars = append(envVars, child.Env)
 			}
 
-			require.ElementsMatch(t, tt.expectedAliases, aliasNames)
+			assert.ElementsMatch(t, tt.expectedAliases, aliasNames)
+
+			assert.ElementsMatch(t, tt.expectedEnvs, envVars)
 		})
 	}
 }

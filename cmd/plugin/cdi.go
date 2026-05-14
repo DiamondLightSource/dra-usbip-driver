@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
 	cdiparser "tags.cncf.io/container-device-interface/pkg/parser"
@@ -130,7 +129,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 			deviceNodes = append(deviceNodes, aliasNode)
 
 			// Each child gets an individual env var.
-			childEnv := fmt.Sprintf("%s_CHILD_%d=%s", envName, n, child.Device.DevName)
+			childEnv := fmt.Sprintf("%s=%s", child.Env, child.Device.DevName)
 			envVars = append(envVars, childEnv)
 		}
 
@@ -181,22 +180,4 @@ func (cdi *CDIHandler) kind() string {
 
 func (cdi *CDIHandler) vendor() string {
 	return "k8s." + cdi.driverName
-}
-
-// Make input string into a valid environment variable name.
-// Replace non alphanumeric characters with underscores.
-func sanitiseEnvName(input string) string {
-	// Alphanumeric characters and underscore.
-	valid := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-
-	var out strings.Builder
-	for _, char := range strings.Split(input, "") {
-		if strings.Contains(valid, char) {
-			out.WriteString(strings.ToUpper(char))
-		} else {
-			out.WriteString("_")
-		}
-	}
-
-	return out.String()
 }
