@@ -200,7 +200,6 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	// Fetch the current attached devices state from the checkpoint file.
 	checkpoint := newCheckpoint()
 	if err := s.checkpointManager.GetCheckpoint(DriverPluginCheckpointFile, checkpoint); err != nil {
-		klog.Errorf("unprepare: unable to sync from checkpoint: %v", err)
 		return fmt.Errorf("unable to sync from checkpoint: %v", err)
 	}
 	preparedClaims := checkpoint.V1.PreparedClaims
@@ -211,20 +210,17 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	}
 
 	if err := s.unprepareDevices(claimUID, preparedClaims[claimUID]); err != nil {
-		klog.Errorf("unprepare failed: %v", err)
 		return fmt.Errorf("unprepare failed: %v", err)
 	}
 
 	err := s.cdi.DeleteClaimSpecFile(claimUID)
 	if err != nil {
-		klog.Errorf("unable to delete CDI spec file for claim: %v", err)
 		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
 	}
 
 	// Remove the claim from the checkpoint file on disk.
 	delete(preparedClaims, claimUID)
 	if err := s.checkpointManager.CreateCheckpoint(DriverPluginCheckpointFile, checkpoint); err != nil {
-		klog.Errorf("unprepare: unable to sync back to checkpoint: %v", err)
 		return fmt.Errorf("unable to sync back to checkpoint: %v", err)
 	}
 
@@ -233,10 +229,8 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 
 func (s *DeviceState) unprepareDevices(claimUID string, devices AttachedDevices) error {
 	for _, device := range devices {
-		klog.Info("Detaching device", device)
 		err := usbip.DetachDevice(device.RemoteHost, device.RemoteBusID, device.DeviceNodeMinor)
 		if err != nil {
-			klog.Infof("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
 			return fmt.Errorf("error detaching device %s/%s: %v", device.RemoteHost, device.RemoteBusID, err)
 		}
 	}
