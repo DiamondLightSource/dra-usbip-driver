@@ -2,11 +2,9 @@ package usbip
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 )
@@ -131,14 +129,9 @@ func GetLocalFromRemote(remoteHost, remoteBusID string) (int, string, error) {
 func GetLocalDeviceInfo(localBusID string) (*devicemetadata.UdevadmInfo, error) {
 	sysPath := fmt.Sprintf("/sys/bus/usb/devices/%s", localBusID)
 
-	udevInfoJson, err := exec.Command("udevadm", "info", "--json=short", sysPath).Output()
+	udevInfo, err := devicemetadata.ReadDeviceInfo(sysPath)
 	if err != nil {
-		return nil, fmt.Errorf("could not get udev device info for %s: %w", sysPath, err)
-	}
-
-	udevInfo := &devicemetadata.UdevadmInfo{}
-	if err := json.Unmarshal(udevInfoJson, &udevInfo); err != nil {
-		return nil, fmt.Errorf("could not parse udev info for %s: %w", localBusID, err)
+		return nil, err
 	}
 
 	return udevInfo, nil

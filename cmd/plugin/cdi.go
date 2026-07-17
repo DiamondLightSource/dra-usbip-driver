@@ -85,17 +85,34 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 			return fmt.Errorf("could not get local device info for %s/%s: %w", device.RemoteHost, device.RemoteBusID, err)
 		}
 
+		// Main device node is the USB device itself.
+		deviceNodes := []*cdispec.DeviceNode{
+			&cdispec.DeviceNode{
+				Path:  devInfo.DevName,
+				Major: devInfo.Major,
+				Minor: devInfo.Minor,
+			},
+		}
+
+		// Add mounts for any child devices e.g serial converters.
+		children, err := devInfo.FindChildren()
+		if err != nil {
+			return fmt.Errorf("error finding children: %s", err)
+		}
+		for _, child := range children {
+			node := &cdispec.DeviceNode{
+				Path:  child.DevName,
+				Major: child.Major,
+				Minor: child.Minor,
+			}
+			deviceNodes = append(deviceNodes, node)
+		}
+
 		containerEdits := cdispec.ContainerEdits{
 			Env: []string{
 				fmt.Sprintf("USBIP_DEVICE_%s_%s=%s/%s", devInfo.BusNum, devInfo.DevNum, device.RemoteHost, device.RemoteBusID),
 			},
-			DeviceNodes: []*cdispec.DeviceNode{
-				&cdispec.DeviceNode{
-					Path:  devInfo.DevName,
-					Major: devInfo.Major,
-					Minor: devInfo.Minor,
-				},
-			},
+			DeviceNodes: deviceNodes,
 		}
 
 		cdiDevice := cdispec.Device{
