@@ -7,7 +7,9 @@ import (
 	cdiparser "tags.cncf.io/container-device-interface/pkg/parser"
 	cdispec "tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/devicemetadata"
 	"github.com/diamondlightsource/dra-usbip-driver/pkg/usbip"
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/utils"
 )
 
 const cdiCommonDeviceName = "common"
@@ -85,6 +87,13 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 			return fmt.Errorf("could not get local device info for %s/%s: %w", device.RemoteHost, device.RemoteBusID, err)
 		}
 
+		// Insert an environment variable mapping the claim/request
+		// to the device path of the USB device.
+		envName := utils.SanitiseEnvName(fmt.Sprintf("USBIP_DEVICE_%s_%s", device.claimName, device.requestName))
+		envVars := []string{
+			fmt.Sprintf("%s=%s", envName, devInfo.DevName),
+		}
+
 		// Main device node is the USB device itself.
 		deviceNodes := []*cdispec.DeviceNode{
 			&cdispec.DeviceNode{
@@ -99,19 +108,34 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices AttachedDevi
 		if err != nil {
 			return fmt.Errorf("error finding children: %s", err)
 		}
-		for _, child := range children {
+
+		aliasedChildren := devicemetadata.ToAliases(device.claimName, device.requestName, children)
+
+		for _, child := range aliasedChildren {
+			// Mount with the same name as on the host.
 			node := &cdispec.DeviceNode{
-				Path:  child.DevName,
-				Major: child.Major,
-				Minor: child.Minor,
+				Path:  child.Device.DevName,
+				Major: child.Device.Major,
+				Minor: child.Device.Minor,
 			}
 			deviceNodes = append(deviceNodes, node)
+
+			// Mount with an alias.
+			aliasNode := &cdispec.DeviceNode{
+				Path:     child.Alias,
+				HostPath: child.Device.DevName,
+				Major:    child.Device.Major,
+				Minor:    child.Device.Minor,
+			}
+			deviceNodes = append(deviceNodes, aliasNode)
+
+			// Each child gets an individual env var.
+			childEnv := fmt.Sprintf("%s=%s", child.Env, child.Device.DevName)
+			envVars = append(envVars, childEnv)
 		}
 
 		containerEdits := cdispec.ContainerEdits{
-			Env: []string{
-				fmt.Sprintf("USBIP_DEVICE_%s_%s=%s/%s", devInfo.BusNum, devInfo.DevNum, device.RemoteHost, device.RemoteBusID),
-			},
+			Env:         envVars,
 			DeviceNodes: deviceNodes,
 		}
 

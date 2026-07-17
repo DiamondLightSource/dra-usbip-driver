@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/diamondlightsource/dra-usbip-driver/pkg/utils"
 )
 
 // Find all child devices of a given device.
@@ -111,4 +113,68 @@ func hasDevName(sysFilesystem fs.FS, path string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+type aliasedDevice struct {
+	// Device alias, path in /dev.
+	Alias  string
+	Env    string
+	Device *UdevadmInfo
+}
+
+// Construct a set of unique device aliases for
+// this set of child devices, with the subsystem
+// of the device as the main identifier.
+// E.g for a device with the "tty" subsystem,
+// /dev/usbip-<req>-<dev>-tty (-> /dev/ttyUSB0).
+func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice {
+	var aliasedDevices []*aliasedDevice
+
+	claim = utils.SanitiseAliasName(claim)
+	request = utils.SanitiseAliasName(request)
+
+	// Count how many children there are of each subsystem type.
+	// If there are multiple of the same type, will need to
+	// index them e.g tty0 and tty1.
+	totalDevicesPerSubsystem := make(map[string]int)
+	for _, child := range children {
+		n := totalDevicesPerSubsystem[child.Subsystem] // (default 0)
+		totalDevicesPerSubsystem[child.Subsystem] = n + 1
+	}
+
+	// While creating the child device aliases, how
+	// many of each subsystem have already been seen.
+	seenDevicesPerSubsystem := make(map[string]int)
+
+	// Construct the aliases.
+	for _, child := range children {
+		// Is this the first, second, etc device of this subsystem type?
+		subsystemIndex := seenDevicesPerSubsystem[child.Subsystem] // (default 0)
+
+		// Update that count, that one more of this type has been seen.
+		seenDevicesPerSubsystem[child.Subsystem] = subsystemIndex + 1
+
+		deviceAlias := fmt.Sprintf("/dev/usbip-%s-%s-%s", claim, request, child.Subsystem)
+		if total := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
+			// There are more than one children of this subsystem, have to index them.
+			// E.g /dev/usbip-c-d-tty -> /dev/usbip-c-d-tty0.
+			deviceAlias = fmt.Sprintf("%s%d", deviceAlias, subsystemIndex)
+		}
+
+		envVar := fmt.Sprintf("USBIP_DEVICE_%s_%s_%s", claim, request, child.Subsystem)
+		if total := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
+			envVar = fmt.Sprintf("%s%d", envVar, subsystemIndex)
+		}
+		envVar = utils.SanitiseEnvName(envVar)
+
+		a := &aliasedDevice{
+			Alias:  deviceAlias,
+			Env:    envVar,
+			Device: child,
+		}
+
+		aliasedDevices = append(aliasedDevices, a)
+	}
+
+	return aliasedDevices
 }
