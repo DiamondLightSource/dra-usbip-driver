@@ -138,7 +138,7 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 	// index them e.g tty0 and tty1.
 	totalDevicesPerSubsystem := make(map[string]int)
 	for _, child := range children {
-		n, _ := totalDevicesPerSubsystem[child.Subsystem]
+		n := totalDevicesPerSubsystem[child.Subsystem] // (default 0)
 		totalDevicesPerSubsystem[child.Subsystem] = n + 1
 	}
 
@@ -149,20 +149,20 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 	// Construct the aliases.
 	for _, child := range children {
 		// Is this the first, second, etc device of this subsystem type?
-		subsystemIndex, _ := seenDevicesPerSubsystem[child.Subsystem]
+		subsystemIndex := seenDevicesPerSubsystem[child.Subsystem] // (default 0)
 
 		// Update that count, that one more of this type has been seen.
 		seenDevicesPerSubsystem[child.Subsystem] = subsystemIndex + 1
 
 		deviceAlias := fmt.Sprintf("/dev/usbip-%s-%s-%s", claim, request, child.Subsystem)
-		if total, _ := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
+		if total := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
 			// There are more than one children of this subsystem, have to index them.
 			// E.g /dev/usbip-c-d-tty -> /dev/usbip-c-d-tty0.
 			deviceAlias = fmt.Sprintf("%s%d", deviceAlias, subsystemIndex)
 		}
 
 		envVar := fmt.Sprintf("USBIP_DEVICE_%s_%s_%s", claim, request, child.Subsystem)
-		if total, _ := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
+		if total := totalDevicesPerSubsystem[child.Subsystem]; total > 1 {
 			envVar = fmt.Sprintf("%s%d", envVar, subsystemIndex)
 		}
 		envVar = utils.SanitiseEnvName(envVar)
