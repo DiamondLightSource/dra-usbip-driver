@@ -132,6 +132,11 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drav1.Device
 	}
 
 	if err = s.cdi.CreateClaimSpecFile(claimUID, preparedDevices); err != nil {
+		// Need to revert attaching the device or kubernetes will retry
+		// the Prepare and fail because the device is already attached.
+		if err2 := s.unprepareDevices(claimUID, preparedDevices); err2 != nil {
+			return nil, fmt.Errorf("failed to detach devices (%v) while recovering from CDI creation error (%v)", err2, err)
+		}
 		return nil, fmt.Errorf("unable to create CDI spec file for claim: %v", err)
 	}
 
