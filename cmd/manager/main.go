@@ -58,6 +58,12 @@ func getDevices(agent string) ([]resourceapi.Device, error) {
 			"product": {
 				StringValue: ptr.To(meta.ModelID),
 			},
+			"host": {
+				StringValue: ptr.To(agent),
+			},
+			"bus": {
+				StringValue: ptr.To(meta.SysName),
+			},
 		}
 
 		if meta.SerialShort != "" {
