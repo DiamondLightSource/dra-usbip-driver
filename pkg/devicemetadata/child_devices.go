@@ -125,7 +125,8 @@ type aliasedDevice struct {
 // Construct a set of unique device aliases for
 // this set of child devices, with the subsystem
 // of the device as the main identifier.
-// E.g /dev/usbip-<req>-<dev>-tty (-> /dev/ttyUSB0).
+// E.g for a device with the "tty" subsystem,
+// /dev/usbip-<req>-<dev>-tty (-> /dev/ttyUSB0).
 func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice {
 	var aliasedDevices []*aliasedDevice
 
@@ -133,6 +134,8 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 	request = utils.SanitiseAliasName(request)
 
 	// Count how many children there are of each subsystem type.
+	// If there are multiple of the same type, will need to
+	// index them e.g tty0 and tty1.
 	totalDevicesPerSubsystem := make(map[string]int)
 	for _, child := range children {
 		n, _ := totalDevicesPerSubsystem[child.Subsystem]
@@ -147,6 +150,8 @@ func ToAliases(claim, request string, children []*UdevadmInfo) []*aliasedDevice 
 	for _, child := range children {
 		// Is this the first, second, etc device of this subsystem type?
 		subsystemIndex, _ := seenDevicesPerSubsystem[child.Subsystem]
+
+		// Update that count, that one more of this type has been seen.
 		seenDevicesPerSubsystem[child.Subsystem] = subsystemIndex + 1
 
 		deviceAlias := fmt.Sprintf("/dev/usbip-%s-%s-%s", claim, request, child.Subsystem)
