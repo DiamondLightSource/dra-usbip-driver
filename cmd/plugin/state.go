@@ -1,7 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path"
 	"strings"
 	"sync"
 
@@ -74,7 +78,45 @@ func NewDeviceState(driverName string) (*DeviceState, error) {
 		return nil, fmt.Errorf("unable to create CDI spec file for common edits: %v", err)
 	}
 
-	checkpointManager, err := checkpointmanager.NewCheckpointManager("/var/lib/kubelet/plugins/usbip")
+	checkpointDirectory := fmt.Sprintf("/var/lib/kubelet/plugins/%s", driverName)
+
+	// Fix bad checkpoint path (didn't use full driver name).
+	// Temporary, remove this section after migration.
+	_, err = os.Stat("/var/lib/kubelet/plugins/usbip/checkpoint.json")
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		// Unknown error, exit out.
+		return nil, fmt.Errorf("unknown error reading old checkpoint file location: %v", err)
+	} else if errors.Is(err, fs.ErrNotExist) {
+		// New node or old checkpoint file has already been migrated. Do nothing.
+	} else {
+		// Checkpoint file exists in old location.
+		// Migrate from plugins/usbip to new location plugins/{driverName}.
+		oldPath := "/var/lib/kubelet/plugins/usbip/checkpoint.json"
+		newPath := path.Join(checkpointDirectory, "checkpoint.json")
+
+		// First ensure the new directory exists.
+		if err := os.MkdirAll(checkpointDirectory, 0755); err != nil {
+			return nil, fmt.Errorf("error making new checkpoint directory: %v", err)
+		}
+
+		checkpointData, err := os.ReadFile(oldPath)
+		if err != nil {
+			return nil, fmt.Errorf("error reading old checkpoint file: %v", err)
+		}
+
+		err = os.WriteFile(newPath, checkpointData, 0600)
+		if err != nil {
+			return nil, fmt.Errorf("error writing new checkpoint file: %v", err)
+		}
+
+		// Remove the old file to complete the migration.
+		err = os.Remove(oldPath)
+		if err != nil {
+			return nil, fmt.Errorf("error removing old checkpoint file: %v", err)
+		}
+	}
+
+	checkpointManager, err := checkpointmanager.NewCheckpointManager(checkpointDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create checkpoint manager: %v", err)
 	}
