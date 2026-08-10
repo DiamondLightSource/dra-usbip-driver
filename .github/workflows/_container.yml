@@ -44,7 +44,7 @@ jobs:
           tags: test-${{ matrix.image-name }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Create tags for publishing image
         id: meta
