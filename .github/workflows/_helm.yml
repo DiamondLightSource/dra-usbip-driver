@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install helm
-        uses: Azure/setup-helm@v3
+        uses: Azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION_TO_INSTALL }}
 
